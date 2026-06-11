@@ -1,0 +1,43 @@
+# Build directories
+build/
+out/
+.vs/
+CMakeSettings.json
+CMakeUserPresets.json
+
+# Visual Studio outputs
+*.sln.cache
+*.VC.db
+*.VC.opendb
+*.user
+*.suo
+Debug/
+Release/
+x64/
+
+# Compiled files
+*.obj
+*.o
+*.exe
+*.dll
+*.lib
+*.pdb
+
+# Generated models and datasets
+models/*.bin
+models/*.model
+models/*.weights
+data/
+dataset/
+datasets/
+
+# Runtime output
+predictions/
+logs/
+*.log
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
