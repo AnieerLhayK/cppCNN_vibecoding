@@ -216,6 +216,27 @@ void CNN::loadModel(const std::filesystem::path& path) {
     zeroGrad();
 }
 
+std::size_t CNN::modelClassCount(const std::filesystem::path& path) {
+    std::ifstream input(path, std::ios::binary);
+    if (!input) {
+        throw std::runtime_error("Could not open model file: " + path.string());
+    }
+
+    std::array<char, modelMagic.size()> magic{};
+    input.read(magic.data(), static_cast<std::streamsize>(magic.size()));
+    if (!input || magic != modelMagic) {
+        throw std::runtime_error("File is not a supported cppCNN model: " + path.string());
+    }
+    if (readValue<std::uint32_t>(input) != modelVersion) {
+        throw std::runtime_error("Model version is not supported.");
+    }
+    const auto count = readValue<std::uint64_t>(input);
+    if (count == 0) {
+        throw std::runtime_error("Model class count is invalid.");
+    }
+    return static_cast<std::size_t>(count);
+}
+
 std::size_t CNN::classCount() const noexcept {
     return classCount_;
 }

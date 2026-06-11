@@ -45,6 +45,19 @@ else()
     target_compile_options(cppcnn_core PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+add_executable(cppcnn_app
+    src/main.cpp
+    src/app/App.cpp
+    src/ui/SimpleUI.cpp
+)
+target_link_libraries(cppcnn_app PRIVATE cppcnn_core)
+
+if(MSVC)
+    target_compile_options(cppcnn_app PRIVATE /W4 /permissive-)
+else()
+    target_compile_options(cppcnn_app PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
 if(CPPCNN_BUILD_TESTS)
     enable_testing()
 

@@ -22,6 +22,7 @@ public:
     [[nodiscard]] std::size_t predict(const Tensor& input, float* confidence = nullptr);
     void saveModel(const std::filesystem::path& path) const;
     void loadModel(const std::filesystem::path& path);
+    [[nodiscard]] static std::size_t modelClassCount(const std::filesystem::path& path);
 
     [[nodiscard]] std::size_t classCount() const noexcept;
     [[nodiscard]] std::size_t layerCount() const noexcept;

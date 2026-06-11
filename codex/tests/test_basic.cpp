@@ -178,6 +178,7 @@ void testModelPersistenceAndUpdate() {
     cppcnn::Tensor input(3, 32, 32, 0.2F);
     const auto beforeSave = source.forward(input);
     source.saveModel(modelPath);
+    expect(cppcnn::CNN::modelClassCount(modelPath) == 3, "Stored model class count is incorrect.");
 
     cppcnn::CNN restored(3, 999);
     restored.loadModel(modelPath);
