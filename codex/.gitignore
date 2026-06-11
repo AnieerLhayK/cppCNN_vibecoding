@@ -24,12 +24,12 @@ x64/
 *.pdb
 
 # Generated models and datasets
-models/*.bin
-models/*.model
-models/*.weights
-data/
-dataset/
-datasets/
+/models/*.bin
+/models/*.model
+/models/*.weights
+/data/
+/dataset/
+/datasets/
 
 # Runtime output
 predictions/

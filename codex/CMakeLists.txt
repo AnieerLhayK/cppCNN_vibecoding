@@ -23,6 +23,7 @@ add_library(cppcnn_core
     src/cnn/Loss.cpp
     src/cnn/PoolingLayer.cpp
     src/cnn/Tensor.cpp
+    src/data/DataLoader.cpp
     src/image/ImageProcessor.cpp
 )
 

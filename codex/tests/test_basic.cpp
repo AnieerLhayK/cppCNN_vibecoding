@@ -6,10 +6,13 @@
 #include "cnn/Loss.h"
 #include "cnn/PoolingLayer.h"
 #include "cnn/Tensor.h"
+#include "data/DataLoader.h"
 #include "image/ImageProcessor.h"
 
 #include <cmath>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <numeric>
 #include <stdexcept>
@@ -124,6 +127,47 @@ void testLeNetForward() {
         "CNN output probabilities do not sum to one.");
 }
 
+void writeTestPpm(const std::filesystem::path& path, const int red, const int green, const int blue) {
+    std::ofstream output(path);
+    output << "P3\n2 2\n255\n";
+    for (int index = 0; index < 4; ++index) {
+        output << red << ' ' << green << ' ' << blue << '\n';
+    }
+}
+
+void testDataLoader() {
+    const auto root =
+        std::filesystem::temp_directory_path() / "cppcnn_dataloader_test";
+    std::filesystem::remove_all(root);
+    std::filesystem::create_directories(root / "00000");
+    std::filesystem::create_directories(root / "00001");
+    std::filesystem::create_directories(root / "00002");
+
+    writeTestPpm(root / "00000" / "a.ppm", 255, 0, 0);
+    writeTestPpm(root / "00000" / "b.ppm", 200, 0, 0);
+    writeTestPpm(root / "00001" / "a.ppm", 0, 255, 0);
+    writeTestPpm(root / "00001" / "b.ppm", 0, 200, 0);
+    writeTestPpm(root / "00002" / "ignored.ppm", 0, 0, 255);
+
+    cppcnn::DataLoaderOptions options;
+    options.classLimit = 2;
+    options.samplesPerClass = 1;
+    cppcnn::DataLoader loader(options);
+    const auto dataset = loader.loadDirectory(root);
+
+    expect(dataset.classCount() == 2, "DataLoader class limit was not applied.");
+    expect(dataset.size() == 2, "DataLoader per-class sample limit was not applied.");
+    expect(dataset.classIds[0] == 0 && dataset.classIds[1] == 1, "Class IDs are incorrect.");
+    expect(dataset.samples[0].label == 0, "Continuous label mapping is incorrect.");
+
+    const auto tensor = loader.loadTensor(dataset.samples[0]);
+    expect(
+        tensor.channels() == 3 && tensor.height() == 32 && tensor.width() == 32,
+        "DataLoader preprocessing dimensions are incorrect.");
+
+    std::filesystem::remove_all(root);
+}
+
 }  // namespace
 
 int main() {
@@ -132,6 +176,7 @@ int main() {
         testImagePreprocessing();
         testLayerDimensions();
         testLeNetForward();
+        testDataLoader();
         std::cout << "All basic tests passed.\n";
         return EXIT_SUCCESS;
     } catch (const std::exception& error) {
