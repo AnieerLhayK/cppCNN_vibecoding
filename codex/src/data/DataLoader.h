@@ -33,16 +33,32 @@ struct DataLoaderOptions {
     std::uint32_t seed = 42;
 };
 
+enum class DatasetSplit {
+    Training,
+    Test,
+};
+
 class DataLoader {
 public:
     explicit DataLoader(DataLoaderOptions options = {});
 
+    Dataset loadDataset(
+        const std::filesystem::path& datasetPath,
+        DatasetSplit split) const;
     Dataset loadDirectory(const std::filesystem::path& splitDirectory) const;
     Tensor loadTensor(const DataSample& sample) const;
 
     [[nodiscard]] const DataLoaderOptions& options() const noexcept;
 
 private:
+    Dataset loadOfficialTestSet(const std::filesystem::path& datasetPath) const;
+    [[nodiscard]] static std::filesystem::path resolveClassDirectory(
+        const std::filesystem::path& datasetPath,
+        DatasetSplit split);
+    [[nodiscard]] static std::filesystem::path findExistingPath(
+        const std::vector<std::filesystem::path>& candidates);
+    [[nodiscard]] static bool containsNumericClassDirectories(
+        const std::filesystem::path& directory);
     [[nodiscard]] static bool isSupportedImage(const std::filesystem::path& path);
     [[nodiscard]] static int parseClassId(const std::filesystem::path& directory);
 

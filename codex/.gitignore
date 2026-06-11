@@ -29,7 +29,6 @@ x64/
 /models/*.weights
 /data/
 /dataset/
-/datasets/
 /demo_data/
 
 # Runtime output

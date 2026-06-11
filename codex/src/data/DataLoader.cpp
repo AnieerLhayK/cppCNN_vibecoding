@@ -4,7 +4,11 @@
 
 #include <algorithm>
 #include <charconv>
+#include <fstream>
+#include <map>
 #include <random>
+#include <set>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <system_error>
@@ -31,6 +35,25 @@ DataLoader::DataLoader(DataLoaderOptions options)
     }
     if (options_.imageWidth <= 0 || options_.imageHeight <= 0) {
         throw std::invalid_argument("DataLoader image dimensions must be positive.");
+    }
+}
+
+Dataset DataLoader::loadDataset(
+    const std::filesystem::path& datasetPath,
+    const DatasetSplit split) const {
+    if (!std::filesystem::exists(datasetPath)) {
+        throw std::runtime_error(
+            "Dataset path does not exist: " + datasetPath.string()
+            + ". Download GTSRB or generate GTSRB_subset; see docs/dataset_guide.md.");
+    }
+
+    try {
+        return loadDirectory(resolveClassDirectory(datasetPath, split));
+    } catch (const std::runtime_error&) {
+        if (split == DatasetSplit::Test) {
+            return loadOfficialTestSet(datasetPath);
+        }
+        throw;
     }
 }
 
@@ -102,6 +125,99 @@ Dataset DataLoader::loadDirectory(
     return dataset;
 }
 
+Dataset DataLoader::loadOfficialTestSet(
+    const std::filesystem::path& datasetPath) const {
+    const auto imagesDirectory = findExistingPath({
+        datasetPath / "Final_Test" / "Images",
+        datasetPath / "GTSRB" / "Final_Test" / "Images",
+        datasetPath,
+    });
+    const auto csvPath = findExistingPath({
+        datasetPath / "GT-final_test.csv",
+        datasetPath / "GTSRB" / "GT-final_test.csv",
+        datasetPath.parent_path() / "GT-final_test.csv",
+        datasetPath.parent_path().parent_path() / "GT-final_test.csv",
+    });
+    if (imagesDirectory.empty() || csvPath.empty()) {
+        throw std::runtime_error(
+            "Could not find the official GTSRB test images and GT-final_test.csv under: "
+            + datasetPath.string());
+    }
+
+    std::ifstream input(csvPath);
+    if (!input) {
+        throw std::runtime_error("Could not open GTSRB test labels: " + csvPath.string());
+    }
+
+    std::string line;
+    std::getline(input, line);
+    std::vector<std::pair<std::filesystem::path, int>> rows;
+    std::set<int> availableClassIds;
+    while (std::getline(input, line)) {
+        if (line.empty()) {
+            continue;
+        }
+        std::vector<std::string> fields;
+        std::stringstream rowStream(line);
+        std::string field;
+        while (std::getline(rowStream, field, ';')) {
+            fields.push_back(field);
+        }
+        if (fields.size() < 8) {
+            throw std::runtime_error("Invalid GTSRB test CSV row: " + line);
+        }
+        int classId = 0;
+        const auto result = std::from_chars(
+            fields[7].data(),
+            fields[7].data() + fields[7].size(),
+            classId);
+        if (result.ec != std::errc() || result.ptr != fields[7].data() + fields[7].size()) {
+            throw std::runtime_error("Invalid class ID in GTSRB test CSV: " + fields[7]);
+        }
+        rows.emplace_back(imagesDirectory / fields[0], classId);
+        availableClassIds.insert(classId);
+    }
+
+    std::vector<int> selectedClassIds(
+        availableClassIds.begin(),
+        availableClassIds.end());
+    if (selectedClassIds.size() > options_.classLimit) {
+        selectedClassIds.resize(options_.classLimit);
+    }
+    std::map<int, std::size_t> labelByClass;
+    for (std::size_t label = 0; label < selectedClassIds.size(); ++label) {
+        labelByClass[selectedClassIds[label]] = label;
+    }
+
+    Dataset dataset;
+    dataset.classIds = selectedClassIds;
+    std::map<int, std::size_t> classCounts;
+    for (const auto& [imagePath, classId] : rows) {
+        const auto label = labelByClass.find(classId);
+        if (label == labelByClass.end()) {
+            continue;
+        }
+        if (options_.samplesPerClass > 0
+            && classCounts[classId] >= options_.samplesPerClass) {
+            continue;
+        }
+        if (!std::filesystem::exists(imagePath)) {
+            throw std::runtime_error(
+                "GTSRB test image listed by CSV is missing: " + imagePath.string());
+        }
+        dataset.samples.push_back({imagePath, label->second, classId});
+        ++classCounts[classId];
+    }
+    if (dataset.samples.empty()) {
+        throw std::runtime_error("GTSRB test CSV did not produce any selected samples.");
+    }
+    if (options_.shuffle) {
+        std::mt19937 generator(options_.seed);
+        std::shuffle(dataset.samples.begin(), dataset.samples.end(), generator);
+    }
+    return dataset;
+}
+
 Tensor DataLoader::loadTensor(const DataSample& sample) const {
     return ImageProcessor::loadAndPreprocess(
         sample.imagePath,
@@ -111,6 +227,56 @@ Tensor DataLoader::loadTensor(const DataSample& sample) const {
 
 const DataLoaderOptions& DataLoader::options() const noexcept {
     return options_;
+}
+
+std::filesystem::path DataLoader::resolveClassDirectory(
+    const std::filesystem::path& datasetPath,
+    const DatasetSplit split) {
+    std::vector<std::filesystem::path> candidates = {datasetPath};
+    if (split == DatasetSplit::Training) {
+        candidates.push_back(datasetPath / "train");
+        candidates.push_back(datasetPath / "Final_Training" / "Images");
+        candidates.push_back(datasetPath / "GTSRB" / "Final_Training" / "Images");
+    } else {
+        candidates.push_back(datasetPath / "test");
+        candidates.push_back(datasetPath / "Final_Test" / "Images");
+        candidates.push_back(datasetPath / "GTSRB" / "Final_Test" / "Images");
+    }
+    for (const auto& candidate : candidates) {
+        if (containsNumericClassDirectories(candidate)) {
+            return candidate;
+        }
+    }
+    throw std::runtime_error(
+        "No class-directory split was found under: " + datasetPath.string());
+}
+
+std::filesystem::path DataLoader::findExistingPath(
+    const std::vector<std::filesystem::path>& candidates) {
+    for (const auto& candidate : candidates) {
+        if (!candidate.empty() && std::filesystem::exists(candidate)) {
+            return candidate;
+        }
+    }
+    return {};
+}
+
+bool DataLoader::containsNumericClassDirectories(
+    const std::filesystem::path& directory) {
+    if (!std::filesystem::is_directory(directory)) {
+        return false;
+    }
+    for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+        if (!entry.is_directory()) {
+            continue;
+        }
+        try {
+            static_cast<void>(parseClassId(entry.path()));
+            return true;
+        } catch (const std::invalid_argument&) {
+        }
+    }
+    return false;
 }
 
 bool DataLoader::isSupportedImage(const std::filesystem::path& path) {

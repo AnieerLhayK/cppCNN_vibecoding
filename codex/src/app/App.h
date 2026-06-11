@@ -19,6 +19,11 @@ private:
     int runInteractive(const std::vector<std::string>& arguments);
 
     static void printUsage();
+    static void printResourceStatus();
+    static void requireDataset(
+        const std::filesystem::path& path,
+        const std::string& purpose);
+    static void requireModel(const std::filesystem::path& path);
     static std::size_t parseSize(
         const std::string& value,
         const std::string& argumentName,

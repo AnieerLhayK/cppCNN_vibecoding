@@ -12,6 +12,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(CPPCNN_BUILD_TESTS "Build unit tests" ON)
 option(CPPCNN_BUILD_DEMO_GENERATOR "Build the synthetic demo dataset generator" ON)
+option(CPPCNN_BUILD_SUBSET_TOOL "Build the GTSRB subset creation tool" ON)
 
 find_package(OpenCV QUIET COMPONENTS core imgcodecs imgproc highgui)
 
@@ -65,6 +66,15 @@ if(CPPCNN_BUILD_DEMO_GENERATOR)
         target_compile_options(cppcnn_demo_generator PRIVATE /W4 /permissive-)
     else()
         target_compile_options(cppcnn_demo_generator PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+endif()
+
+if(CPPCNN_BUILD_SUBSET_TOOL)
+    add_executable(cppcnn_create_subset scripts/create_subset.cpp)
+    if(MSVC)
+        target_compile_options(cppcnn_create_subset PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(cppcnn_create_subset PRIVATE -Wall -Wextra -Wpedantic)
     endif()
 endif()
 

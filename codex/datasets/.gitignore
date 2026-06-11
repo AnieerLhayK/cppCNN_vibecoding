@@ -1,0 +1,4 @@
+# Keep the dataset documentation, ignore all downloaded or generated data.
+*
+!.gitignore
+!README.md

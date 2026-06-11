@@ -169,6 +169,48 @@ void testDataLoader() {
     std::filesystem::remove_all(root);
 }
 
+void testOfficialGtsrbLayout() {
+    const auto root =
+        std::filesystem::temp_directory_path() / "cppcnn_official_gtsrb_test";
+    std::filesystem::remove_all(root);
+
+    const auto trainingImages =
+        root / "GTSRB" / "Final_Training" / "Images";
+    const auto testImages =
+        root / "GTSRB" / "Final_Test" / "Images";
+    std::filesystem::create_directories(trainingImages / "00000");
+    std::filesystem::create_directories(trainingImages / "00001");
+    std::filesystem::create_directories(testImages);
+
+    writeTestPpm(trainingImages / "00000" / "train0.ppm", 255, 0, 0);
+    writeTestPpm(trainingImages / "00001" / "train1.ppm", 0, 255, 0);
+    writeTestPpm(testImages / "00000.ppm", 255, 0, 0);
+    writeTestPpm(testImages / "00001.ppm", 0, 255, 0);
+
+    std::ofstream csv(root / "GT-final_test.csv");
+    csv << "Filename;Width;Height;Roi.X1;Roi.Y1;Roi.X2;Roi.Y2;ClassId\n";
+    csv << "00000.ppm;2;2;0;0;1;1;0\n";
+    csv << "00001.ppm;2;2;0;0;1;1;1\n";
+    csv.close();
+
+    cppcnn::DataLoaderOptions options;
+    options.classLimit = 2;
+    cppcnn::DataLoader loader(options);
+    const auto trainingSet =
+        loader.loadDataset(root, cppcnn::DatasetSplit::Training);
+    const auto testSet =
+        loader.loadDataset(root, cppcnn::DatasetSplit::Test);
+
+    expect(trainingSet.size() == 2, "Official GTSRB training layout was not detected.");
+    expect(testSet.size() == 2, "Official GTSRB test CSV was not loaded.");
+    expect(
+        testSet.samples[0].originalClassId == 0
+            && testSet.samples[1].originalClassId == 1,
+        "Official GTSRB test labels are incorrect.");
+
+    std::filesystem::remove_all(root);
+}
+
 void testModelPersistenceAndUpdate() {
     const auto modelPath =
         std::filesystem::temp_directory_path() / "cppcnn_model_test.bin";
@@ -211,6 +253,7 @@ int main() {
         testLayerDimensions();
         testLeNetForward();
         testDataLoader();
+        testOfficialGtsrbLayout();
         testModelPersistenceAndUpdate();
         std::cout << "All basic tests passed.\n";
         return EXIT_SUCCESS;

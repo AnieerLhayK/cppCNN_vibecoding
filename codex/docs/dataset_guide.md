@@ -1,75 +1,153 @@
 # GTSRB 数据集指南
 
-## 1. 数据集来源
+## 1. 数据来源
 
-GTSRB（German Traffic Sign Recognition Benchmark）是常用的 43 类德国交通标志分类数据集。可从官方基准页面获取：
+GTSRB（German Traffic Sign Recognition Benchmark）是 43 类德国交通标志分类基准。项目优先使用官方页面链接的 ERDA 公共归档：
 
-- 官方页面：<https://benchmark.ini.rub.de/gtsrb_dataset.html>
-- TensorFlow Datasets 数据说明：<https://www.tensorflow.org/datasets/catalog/german_traffic_sign>
+- 官方说明页：<https://benchmark.ini.rub.de/gtsrb_dataset.html>
+- 官方归档目录：<https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/>
+- Kaggle 备用镜像：<https://www.kaggle.com/datasets/meowmeowmeowmeowmeow/gtsrb-german-traffic-sign>
 
-本项目只使用数据文件，不依赖 TensorFlow。
+项目只读取数据文件，不依赖 Kaggle SDK、TensorFlow 或其他深度学习框架。
 
-## 2. 推荐目录结构
+## 2. 下载链接
 
-`DataLoader` 要求训练集和测试集都整理为“类别目录包含图片”的结构：
+官方直链：
+
+- 训练图：<https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/GTSRB_Final_Training_Images.zip>
+- 测试图：<https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/GTSRB_Final_Test_Images.zip>
+- 测试标签：<https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/GTSRB_Final_Test_GT.zip>
+
+PowerShell 下载示例：
+
+```powershell
+cd codex
+New-Item -ItemType Directory -Force datasets\GTSRB\downloads
+
+$base = "https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370"
+curl.exe -L -C - -o datasets\GTSRB\downloads\GTSRB_Final_Training_Images.zip `
+  "$base/GTSRB_Final_Training_Images.zip"
+curl.exe -L -C - -o datasets\GTSRB\downloads\GTSRB_Final_Test_Images.zip `
+  "$base/GTSRB_Final_Test_Images.zip"
+curl.exe -L -C - -o datasets\GTSRB\downloads\GTSRB_Final_Test_GT.zip `
+  "$base/GTSRB_Final_Test_GT.zip"
+```
+
+`-C -` 支持断点续传。可用 `Get-FileHash -Algorithm SHA256` 对照 `datasets/README.md` 校验。
+
+## 3. 数据规模
+
+| 项目 | 数量 |
+| --- | ---: |
+| 类别 | 43 |
+| 训练图片 | 39,209 |
+| 测试图片 | 12,630 |
+| 总图片 | 51,839 |
+
+训练类别不均衡，每类约 210 至 2,250 张。测试标签位于 `GT-final_test.csv`，以分号分隔。
+
+## 4. 原始目录结构
+
+官方 ZIP 解压后保留原始结构：
 
 ```text
-D:\datasets\gtsrb\
-|-- train\
-|   |-- 00000\
-|   |   |-- image_001.ppm
-|   |   `-- ...
-|   |-- 00001\
-|   `-- ...
-`-- test\
-    |-- 00000\
-    |-- 00001\
-    `-- ...
+codex/datasets/GTSRB/
+|-- downloads/
+|-- GTSRB/
+|   |-- Final_Training/
+|   |   `-- Images/
+|   |       |-- 00000/
+|   |       |-- 00001/
+|   |       `-- 00042/
+|   `-- Final_Test/
+|       `-- Images/
+|           |-- 00000.ppm
+|           `-- ...
+`-- GT-final_test.csv
 ```
 
-类别目录名必须是非负整数，可使用 `0`、`1` 或 GTSRB 常见的 `00000`、`00001`。支持 `.ppm`、`.pnm`、`.png`、`.jpg`、`.jpeg`、`.bmp`；未启用 OpenCV 时只能实际读取 PPM/PNM。
+`DataLoader::loadDataset` 默认识别这个结构：
 
-官方测试包可能通过 CSV 单独提供标签，而不是按类别分目录。请根据标签 CSV 将测试图片复制或链接到对应类别目录，或者自行写转换脚本。转换产物应放在数据集目录，不放入 Git。
+- 训练时自动进入 `GTSRB/Final_Training/Images`。
+- 评估时自动读取 `GTSRB/Final_Test/Images` 和 `GT-final_test.csv`。
+- 同时兼容已经整理好的 `train/<class>`、`test/<class>` 子集目录。
 
-## 3. 如何选择子集
-
-命令：
+因此训练和评估都可以直接传数据集根目录：
 
 ```powershell
-cppcnn_app train <train_dir> <model> <class_count> <epochs> <samples_per_class>
+.\build\Release\cppcnn_app.exe train datasets\GTSRB models\gtsrb43.bin 43 5 0
+.\build\Release\cppcnn_app.exe evaluate datasets\GTSRB models\gtsrb43.bin 0
 ```
 
-例如取前 10 类，每类最多 200 张：
+## 5. 开发子集
+
+构建后运行：
 
 ```powershell
-cppcnn_app train D:\datasets\gtsrb\train models\gtsrb10.bin 10 5 200
+.\build\Release\cppcnn_create_subset.exe `
+  datasets\GTSRB datasets\GTSRB_subset 10 500
 ```
 
-程序按数字类别 ID 升序选择前 N 个目录，并映射为连续标签。例如原始目录 `00002`、`00005` 被选择时，训练标签分别是 `0`、`1`。
+参数依次为：
 
-课程演示建议：
+```text
+<完整数据根目录> <输出目录> <类别数> <每类训练图片数>
+```
 
-- 快速烟雾测试：2 类，每类 20 至 50 张，1 至 2 个 epoch。
-- 默认实验：10 类，尽量使用这些类别的全部训练图片。
-- 计算资源允许时：逐步增加 epoch 和类别数。
+每类图片数必须在 500 到 1000 之间。工具会：
 
-## 4. 扩展到 43 类
+1. 按原始类别 ID 排序；
+2. 跳过训练图片不足指定数量的类别；
+3. 每类复制指定数量的训练图；
+4. 根据官方 CSV 复制这些类别的全部测试图；
+5. 生成 `subset_manifest.txt` 和顺序一致的 `labels.txt`。
 
-1. 保留 `train/00000` 到 `train/00042`。
-2. 将测试集同样整理为 `test/00000` 到 `test/00042`。
-3. 训练命令的 `class_count` 改为 `43`。
-4. 将 `assets/labels.txt` 扩展为 43 行，顺序与类别 ID 一致。
-5. 适当增加 epoch，并考虑加入数据增强和学习率调度。
+默认结果：
 
-网络输出层会按运行时类别数创建，模型文件也记录类别数，因此代码本身不限定为 10 类。
+```text
+classes=10
+training_images_per_class=500
+training_images=5000
+test_images=5670
+class_ids=1,2,3,4,5,7,8,9,10,11
+```
 
-## 5. Git 注意事项
+开发阶段推荐：
 
-不要提交：
+```powershell
+.\build\Release\cppcnn_app.exe train `
+  datasets\GTSRB_subset models\gtsrb_subset10.bin 10 5 0
 
-- 完整 GTSRB 压缩包或解压图片
-- `codex/data/`、`codex/dataset/`、`codex/datasets/`
-- `models/*.bin`、`*.weights`、`*.model`
-- 构建目录和运行日志
+.\build\Release\cppcnn_app.exe evaluate `
+  datasets\GTSRB_subset models\gtsrb_subset10.bin 0
 
-这些路径已写入 `codex/.gitignore`。大型数据集最好放在仓库之外，例如 `D:\datasets\gtsrb`。
+.\build\Release\cppcnn_app.exe predict `
+  datasets\GTSRB_subset\test\00001\00001.ppm `
+  models\gtsrb_subset10.bin datasets\GTSRB_subset\labels.txt
+```
+
+## 6. 切换到完整 43 类
+
+代码的输出类别数由运行参数决定，模型文件也保存类别数。切换完整数据只需：
+
+1. 使用 `datasets/GTSRB` 根目录；
+2. 将 `class_count` 设为 `43`；
+3. 使用包含 43 行的标签文件；
+4. 根据 CPU 性能调整 epoch 和每类样本上限。
+
+完整训练较慢时可先使用：
+
+```powershell
+.\build\Release\cppcnn_app.exe train datasets\GTSRB models\debug43.bin 43 1 10
+```
+
+这会使用每类最多 10 张图片验证 43 类流程。
+
+## 7. Git 与缺失资源
+
+- `datasets/.gitignore` 排除所有真实数据，只跟踪说明文件。
+- `models/.gitignore` 排除所有模型权重，只跟踪格式说明。
+- 程序无参数启动时会显示完整数据集、开发子集和默认模型状态。
+- 显式传入不存在的数据或模型时，程序会给出下载或训练提示并正常返回错误码。
+
+不要使用 `git add -f` 提交数据或权重。
