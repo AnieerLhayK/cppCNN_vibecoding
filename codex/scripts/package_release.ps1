@@ -12,7 +12,7 @@ $sourceDataset = Join-Path $projectRoot "datasets\GTSRB_subset"
 $demoImages = @(
     @{ Source = "test\00001\00001.ppm"; Destination = "01_speed_limit_30.ppm" },
     @{ Source = "test\00002\00034.ppm"; Destination = "02_speed_limit_50.ppm" },
-    @{ Source = "test\00003\00023.ppm"; Destination = "03_speed_limit_60.ppm" },
+    @{ Source = "test\00003\00036.ppm"; Destination = "03_speed_limit_60.ppm" },
     @{ Source = "test\00004\00014.ppm"; Destination = "04_speed_limit_70.ppm" },
     @{ Source = "test\00005\00030.ppm"; Destination = "05_speed_limit_80.ppm" }
 )

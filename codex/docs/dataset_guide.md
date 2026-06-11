@@ -85,7 +85,7 @@ codex/datasets/GTSRB/
 
 ```powershell
 .\build\Release\cppcnn_create_subset.exe `
-  datasets\GTSRB datasets\GTSRB_subset 10 500
+  datasets\GTSRB datasets\GTSRB_subset 10 1000
 ```
 
 参数依次为：
@@ -106,8 +106,8 @@ codex/datasets/GTSRB/
 
 ```text
 classes=10
-training_images_per_class=500
-training_images=5000
+training_images_per_class=1000
+training_images=10000
 test_images=5670
 class_ids=1,2,3,4,5,7,8,9,10,11
 ```

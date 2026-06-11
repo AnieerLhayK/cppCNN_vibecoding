@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <random>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -164,7 +165,7 @@ int main(int argc, char* argv[]) {
             argc > 2 ? std::filesystem::path(argv[2]) : "datasets/GTSRB_subset";
         const int classCount = argc > 3 ? parsePositive(argv[3], "class_count") : 10;
         const int trainingImagesPerClass =
-            argc > 4 ? parsePositive(argv[4], "images_per_class") : 500;
+            argc > 4 ? parsePositive(argv[4], "images_per_class") : 1000;
         if (trainingImagesPerClass < 500 || trainingImagesPerClass > 1000) {
             throw std::invalid_argument("images_per_class must be between 500 and 1000.");
         }
@@ -208,8 +209,12 @@ int main(int argc, char* argv[]) {
         for (const auto& [classId, images] : eligibleClasses) {
             selectedClassIds.insert(classId);
             const auto destination = outputRoot / "train" / classDirectoryName(classId);
+            auto sampledImages = images;
+            std::mt19937 generator(2026U + static_cast<unsigned int>(classId));
+            std::shuffle(sampledImages.begin(), sampledImages.end(), generator);
             for (int index = 0; index < trainingImagesPerClass; ++index) {
-                copyFile(images[static_cast<std::size_t>(index)], destination / images[index].filename());
+                const auto& image = sampledImages[static_cast<std::size_t>(index)];
+                copyFile(image, destination / image.filename());
                 ++copiedTraining;
             }
         }
