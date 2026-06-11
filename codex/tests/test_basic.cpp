@@ -6,6 +6,7 @@
 #include "cnn/Loss.h"
 #include "cnn/PoolingLayer.h"
 #include "cnn/Tensor.h"
+#include "cnn/Trainer.h"
 #include "data/DataLoader.h"
 #include "image/ImageProcessor.h"
 
@@ -168,6 +169,38 @@ void testDataLoader() {
     std::filesystem::remove_all(root);
 }
 
+void testModelPersistenceAndUpdate() {
+    const auto modelPath =
+        std::filesystem::temp_directory_path() / "cppcnn_model_test.bin";
+    std::filesystem::remove(modelPath);
+
+    cppcnn::CNN source(3, 21);
+    cppcnn::Tensor input(3, 32, 32, 0.2F);
+    const auto beforeSave = source.forward(input);
+    source.saveModel(modelPath);
+
+    cppcnn::CNN restored(3, 999);
+    restored.loadModel(modelPath);
+    const auto afterLoad = restored.forward(input);
+    for (std::size_t index = 0; index < beforeSave.size(); ++index) {
+        expectNear(
+            afterLoad[index],
+            beforeSave[index],
+            1.0e-6F,
+            "Loaded model prediction differs from the saved model.");
+    }
+
+    const float initialLoss = cppcnn::CrossEntropyLoss::value(afterLoad, 1);
+    restored.backward(cppcnn::CrossEntropyLoss::gradient(afterLoad, 1));
+    restored.update(0.01F);
+    const auto afterUpdate = restored.forward(input);
+    const float updatedLoss = cppcnn::CrossEntropyLoss::value(afterUpdate, 1);
+    expect(std::isfinite(updatedLoss), "Training update produced a non-finite loss.");
+    expect(updatedLoss <= initialLoss, "A single training step did not reduce sample loss.");
+
+    std::filesystem::remove(modelPath);
+}
+
 }  // namespace
 
 int main() {
@@ -177,6 +210,7 @@ int main() {
         testLayerDimensions();
         testLeNetForward();
         testDataLoader();
+        testModelPersistenceAndUpdate();
         std::cout << "All basic tests passed.\n";
         return EXIT_SUCCESS;
     } catch (const std::exception& error) {

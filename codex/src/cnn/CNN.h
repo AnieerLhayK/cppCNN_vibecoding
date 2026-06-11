@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <vector>
 
@@ -19,6 +20,9 @@ public:
     void update(float learningRate, float gradientScale = 1.0F, float weightDecay = 0.0F);
 
     [[nodiscard]] std::size_t predict(const Tensor& input, float* confidence = nullptr);
+    void saveModel(const std::filesystem::path& path) const;
+    void loadModel(const std::filesystem::path& path);
+
     [[nodiscard]] std::size_t classCount() const noexcept;
     [[nodiscard]] std::size_t layerCount() const noexcept;
 
