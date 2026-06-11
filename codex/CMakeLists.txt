@@ -15,6 +15,13 @@ option(CPPCNN_BUILD_TESTS "Build unit tests" ON)
 find_package(OpenCV QUIET COMPONENTS core imgcodecs imgproc highgui)
 
 add_library(cppcnn_core
+    src/cnn/Activation.cpp
+    src/cnn/CNN.cpp
+    src/cnn/ConvLayer.cpp
+    src/cnn/FCLayer.cpp
+    src/cnn/FlattenLayer.cpp
+    src/cnn/Loss.cpp
+    src/cnn/PoolingLayer.cpp
     src/cnn/Tensor.cpp
     src/image/ImageProcessor.cpp
 )
