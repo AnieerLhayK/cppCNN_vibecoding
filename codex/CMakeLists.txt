@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(CPPCNN_BUILD_TESTS "Build unit tests" ON)
+option(CPPCNN_BUILD_DEMO_GENERATOR "Build the synthetic demo dataset generator" ON)
 
 find_package(OpenCV QUIET COMPONENTS core imgcodecs imgproc highgui)
 
@@ -56,6 +57,15 @@ if(MSVC)
     target_compile_options(cppcnn_app PRIVATE /W4 /permissive-)
 else()
     target_compile_options(cppcnn_app PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+if(CPPCNN_BUILD_DEMO_GENERATOR)
+    add_executable(cppcnn_demo_generator tools/generate_demo_dataset.cpp)
+    if(MSVC)
+        target_compile_options(cppcnn_demo_generator PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(cppcnn_demo_generator PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
 endif()
 
 if(CPPCNN_BUILD_TESTS)

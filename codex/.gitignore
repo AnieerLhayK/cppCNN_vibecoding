@@ -30,6 +30,7 @@ x64/
 /data/
 /dataset/
 /datasets/
+/demo_data/
 
 # Runtime output
 predictions/
