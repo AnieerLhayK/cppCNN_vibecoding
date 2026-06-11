@@ -41,3 +41,9 @@ logs/
 Thumbs.db
 .idea/
 .vscode/
+
+# Checked-in course delivery package. Keep future model binaries excluded.
+!/Release/
+!/Release/**
+/Release/models/*
+!/Release/models/README.md
