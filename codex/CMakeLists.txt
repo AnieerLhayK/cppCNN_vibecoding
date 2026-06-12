@@ -80,6 +80,10 @@ if(CPPCNN_BUILD_GUI)
             VERSION 1.0
             QML_FILES
                 qml/Main.qml
+                qml/components/AppButton.qml
+                qml/components/Panel.qml
+                qml/components/ProbabilityBar.qml
+                qml/components/StatusPill.qml
         )
 
         target_link_libraries(cppcnn_gui PRIVATE
