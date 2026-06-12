@@ -13,6 +13,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(CPPCNN_BUILD_TESTS "Build unit tests" ON)
 option(CPPCNN_BUILD_DEMO_GENERATOR "Build the synthetic demo dataset generator" ON)
 option(CPPCNN_BUILD_SUBSET_TOOL "Build the GTSRB subset creation tool" ON)
+option(CPPCNN_BUILD_GUI "Build the Qt Quick desktop application" ON)
 
 find_package(OpenCV QUIET COMPONENTS core imgcodecs imgproc highgui)
 
@@ -58,6 +59,49 @@ if(MSVC)
     target_compile_options(cppcnn_app PRIVATE /W4 /permissive-)
 else()
     target_compile_options(cppcnn_app PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+if(CPPCNN_BUILD_GUI)
+    find_package(Qt6 QUIET COMPONENTS Core Gui Quick Qml QuickControls2 Concurrent)
+    if(Qt6_FOUND)
+        qt_standard_project_setup(REQUIRES 6.8)
+
+        qt_add_executable(cppcnn_gui WIN32
+            src/gui/GuiMain.cpp
+            src/gui/AppController.cpp
+            src/gui/AppController.h
+            src/gui/ImageBridge.cpp
+            src/gui/ImageBridge.h
+            src/gui/PredictionResult.h
+        )
+
+        qt_add_qml_module(cppcnn_gui
+            URI CppCNNGui
+            VERSION 1.0
+            QML_FILES
+                qml/Main.qml
+        )
+
+        target_link_libraries(cppcnn_gui PRIVATE
+            cppcnn_core
+            Qt6::Core
+            Qt6::Gui
+            Qt6::Quick
+            Qt6::Qml
+            Qt6::QuickControls2
+            Qt6::Concurrent
+        )
+
+        if(MSVC)
+            target_compile_options(cppcnn_gui PRIVATE /W4 /permissive-)
+        else()
+            target_compile_options(cppcnn_gui PRIVATE -Wall -Wextra -Wpedantic)
+        endif()
+    else()
+        message(WARNING
+            "Qt 6 was not found. cppcnn_gui will not be built; "
+            "set CMAKE_PREFIX_PATH to a Qt 6 MSVC installation.")
+    endif()
 endif()
 
 if(CPPCNN_BUILD_DEMO_GENERATOR)
