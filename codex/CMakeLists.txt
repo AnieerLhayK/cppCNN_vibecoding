@@ -54,6 +54,7 @@ add_executable(cppcnn_app
     src/ui/SimpleUI.cpp
 )
 target_link_libraries(cppcnn_app PRIVATE cppcnn_core)
+install(TARGETS cppcnn_app RUNTIME DESTINATION .)
 
 if(MSVC)
     target_compile_options(cppcnn_app PRIVATE /W4 /permissive-)
@@ -95,6 +96,14 @@ if(CPPCNN_BUILD_GUI)
             Qt6::QuickControls2
             Qt6::Concurrent
         )
+        install(TARGETS cppcnn_gui RUNTIME DESTINATION .)
+
+        qt_generate_deploy_qml_app_script(
+            TARGET cppcnn_gui
+            OUTPUT_SCRIPT cppcnn_gui_deploy_script
+            NO_TRANSLATIONS
+        )
+        install(SCRIPT ${cppcnn_gui_deploy_script})
 
         if(MSVC)
             target_compile_options(cppcnn_gui PRIVATE /W4 /permissive-)

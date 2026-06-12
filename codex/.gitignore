@@ -47,3 +47,18 @@ Thumbs.db
 !/Release/**
 /Release/models/*
 !/Release/models/README.md
+
+# Generated Qt deployment runtime. Recreate with scripts/package_release.ps1.
+/Release/*.dll
+/Release/*.pdb
+/Release/bin/
+/Release/generic/
+/Release/iconengines/
+/Release/imageformats/
+/Release/networkinformation/
+/Release/platforms/
+/Release/plugins/
+/Release/qml/
+/Release/styles/
+/Release/tls/
+/Release/translations/
