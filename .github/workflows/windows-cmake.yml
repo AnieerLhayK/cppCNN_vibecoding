@@ -19,12 +19,12 @@ concurrency:
 jobs:
   build-and-test:
     name: MSVC Release
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 20
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configure CMake
         run: >
