@@ -1,61 +1,59 @@
 # cppCNN 交通标志识别演示包
 
-本目录是提供给教师的 Windows Release 演示包，不需要安装编译器或重新编译。
+本目录是面向教师演示的 Windows x64 便携包。完成本地打包后，无需安装 Qt、Visual Studio、Python、OpenCV，也无需重新训练。
 
-## 当前状态
+## 快速开始
 
-可执行程序、类别标签、演示图片和训练模型均已就位。本地 Release 包可以直接运行，不需要重新训练。
-
-模型位置：
+双击：
 
 ```text
-models/gtsrb_subset10.bin
+run_demo.bat
 ```
 
-该模型使用 10 类、每类 1,000 张图片训练 5 个 epoch：
+或直接运行：
 
 ```text
-训练集：10,000 张
-测试集：5,670 张
-训练准确率：94.61%
-测试准确率：89.63%
+cppcnn_gui.exe
 ```
 
-教师可直接双击 `run_demo.bat`。
+在界面中点击任意演示图片即可显示 Top-1、置信度、推理时间和 Top-3。
 
 ## 目录内容
 
 ```text
 Release/
-|-- cppcnn_app.exe          # 静态 MSVC Release 可执行程序
-|-- labels.txt              # 与 10 类开发模型对应的标签
-|-- demo_images/            # 5 张 GTSRB 演示图片
-|-- models/
-|   `-- README.md           # 模型位置和格式说明
-|-- run_demo.bat            # 双击演示
-`-- README.md
+├── cppcnn_gui.exe          # Qt 桌面界面
+├── cppcnn_app.exe          # CLI 训练与推理程序
+├── Qt6*.dll                # Qt 运行库，本地生成且不入 Git
+├── plugins/                # Qt 平台与图片插件
+├── qml/                    # Qt Quick 运行模块
+├── models/
+│   └── gtsrb_subset10.bin  # 训练权重，本地生成且不入 Git
+├── demo_images/            # 五张 GTSRB 演示图片
+├── labels.txt              # 10 类标签
+├── qt.conf                 # 便携资源路径
+├── run_demo.bat            # GUI 启动脚本
+└── run_cli_demo.bat        # CLI 演示脚本
 ```
 
-## 演示方法
+## 模型结果
 
-正式模型就位后：
+```text
+训练样本：10,000
+测试样本：5,670
+Epoch：5
+训练准确率：94.61%
+测试准确率：89.63%
+```
 
-1. 双击 `run_demo.bat`。
-2. 程序使用 `demo_images/01_speed_limit_30.ppm`。
-3. 控制台显示预测类别和置信度。
-4. 当前构建未附带 OpenCV，因此图片窗口不可用；图片可直接用支持 PPM 的查看器打开。
+## 重新生成
 
-也可以在命令行选择其他图片：
+在仓库根目录执行：
 
 ```powershell
-.\cppcnn_app.exe predict `
-  .\demo_images\02_speed_limit_50.ppm `
-  .\models\gtsrb_subset10.bin `
-  .\labels.txt
+.\codex\scripts\package_release.ps1 `
+  -ModelPath .\codex\models\gtsrb_subset10.bin `
+  -QtRoot C:\Qt\6.11.1\msvc2022_64
 ```
 
-## 常见提示
-
-- `Model file is missing`：发布包复制不完整，请确认 `models/gtsrb_subset10.bin` 存在。
-- Windows SmartScreen 提示：选择“更多信息”，确认程序来源后运行。
-- 无法打开 PNG/JPEG：此发布构建没有 OpenCV，请使用随包提供的 PPM 图片。
+如果模型或 Qt 组件缺失，脚本会明确报错并停止，不会生成残缺包。

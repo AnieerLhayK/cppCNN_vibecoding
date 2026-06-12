@@ -142,4 +142,30 @@ if(CPPCNN_BUILD_TESTS)
     target_link_libraries(cppcnn_basic_tests PRIVATE cppcnn_core)
 
     add_test(NAME cppcnn_basic_tests COMMAND cppcnn_basic_tests)
+
+    if(TARGET cppcnn_gui)
+        add_executable(cppcnn_gui_tests
+            tests/test_gui_controller.cpp
+            src/gui/AppController.cpp
+            src/gui/AppController.h
+            src/gui/ImageBridge.cpp
+            src/gui/ImageBridge.h
+            src/gui/PredictionResult.h
+        )
+        target_compile_definitions(cppcnn_gui_tests PRIVATE
+            CPPCNN_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+        )
+        target_link_libraries(cppcnn_gui_tests PRIVATE
+            cppcnn_core
+            Qt6::Core
+            Qt6::Gui
+            Qt6::Concurrent
+        )
+        add_test(NAME cppcnn_gui_tests COMMAND cppcnn_gui_tests)
+        set_tests_properties(cppcnn_gui_tests PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+            ENVIRONMENT_MODIFICATION
+                "PATH=path_list_prepend:$<TARGET_FILE_DIR:Qt6::Core>"
+        )
+    endif()
 endif()
