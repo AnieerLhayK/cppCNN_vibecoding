@@ -221,6 +221,11 @@ void testModelPersistenceAndUpdate() {
     const auto beforeSave = source.forward(input);
     source.saveModel(modelPath);
     expect(cppcnn::CNN::modelClassCount(modelPath) == 3, "Stored model class count is incorrect.");
+    const auto modelInfo = cppcnn::CNN::inspectModel(modelPath);
+    expect(modelInfo.version == 1, "Stored model version is incorrect.");
+    expect(modelInfo.classCount == 3, "Inspected model class count is incorrect.");
+    expect(modelInfo.trainableLayerCount == 4, "Inspected trainable layer count is incorrect.");
+    expect(modelInfo.parameterCount > 50000, "Inspected model parameter count is too small.");
 
     cppcnn::CNN restored(3, 999);
     restored.loadModel(modelPath);

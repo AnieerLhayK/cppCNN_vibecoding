@@ -10,6 +10,7 @@
 #include <array>
 #include <cstdint>
 #include <fstream>
+#include <limits>
 #include <stdexcept>
 #include <string>
 
@@ -62,6 +63,20 @@ void readVector(std::istream& input, std::vector<float>& values) {
     if (!input) {
         throw std::runtime_error("Model parameter data is truncated.");
     }
+}
+
+std::uint64_t inspectVector(std::istream& input) {
+    const auto count = readValue<std::uint64_t>(input);
+    if (count > static_cast<std::uint64_t>(
+            std::numeric_limits<std::streamsize>::max() / sizeof(float))) {
+        throw std::runtime_error("Model parameter count is invalid.");
+    }
+    const auto bytes = static_cast<std::streamsize>(count * sizeof(float));
+    input.ignore(bytes);
+    if (input.gcount() != bytes) {
+        throw std::runtime_error("Model parameter data is truncated.");
+    }
+    return count;
 }
 
 }  // namespace
@@ -217,6 +232,10 @@ void CNN::loadModel(const std::filesystem::path& path) {
 }
 
 std::size_t CNN::modelClassCount(const std::filesystem::path& path) {
+    return inspectModel(path).classCount;
+}
+
+ModelInfo CNN::inspectModel(const std::filesystem::path& path) {
     std::ifstream input(path, std::ios::binary);
     if (!input) {
         throw std::runtime_error("Could not open model file: " + path.string());
@@ -227,14 +246,50 @@ std::size_t CNN::modelClassCount(const std::filesystem::path& path) {
     if (!input || magic != modelMagic) {
         throw std::runtime_error("File is not a supported cppCNN model: " + path.string());
     }
-    if (readValue<std::uint32_t>(input) != modelVersion) {
+    const auto version = readValue<std::uint32_t>(input);
+    if (version != modelVersion) {
         throw std::runtime_error("Model version is not supported.");
     }
     const auto count = readValue<std::uint64_t>(input);
     if (count == 0) {
         throw std::runtime_error("Model class count is invalid.");
     }
-    return static_cast<std::size_t>(count);
+
+    const std::array<std::uint32_t, 4> expectedTypes = {
+        convolutionType,
+        convolutionType,
+        fullyConnectedType,
+        fullyConnectedType,
+    };
+    const auto layerCount = readValue<std::uint32_t>(input);
+    if (layerCount != expectedTypes.size()) {
+        throw std::runtime_error("Model architecture does not match the supported LeNet network.");
+    }
+
+    std::uint64_t parameterCount = 0;
+    for (const auto expectedType : expectedTypes) {
+        if (readValue<std::uint32_t>(input) != expectedType) {
+            throw std::runtime_error("Model layer order does not match the supported network.");
+        }
+        const auto weightCount = inspectVector(input);
+        const auto biasCount = inspectVector(input);
+        const auto maximum = std::numeric_limits<std::uint64_t>::max();
+        if (weightCount > maximum - parameterCount) {
+            throw std::runtime_error("Model parameter count is invalid.");
+        }
+        parameterCount += weightCount;
+        if (biasCount > maximum - parameterCount) {
+            throw std::runtime_error("Model parameter count is invalid.");
+        }
+        parameterCount += biasCount;
+    }
+
+    ModelInfo info;
+    info.version = version;
+    info.classCount = static_cast<std::size_t>(count);
+    info.trainableLayerCount = layerCount;
+    info.parameterCount = static_cast<std::size_t>(parameterCount);
+    return info;
 }
 
 std::size_t CNN::classCount() const noexcept {
