@@ -118,6 +118,8 @@ CLI 置信度：99.85%
 本机 GUI 推理时间：约 3 ms
 ```
 
+`v1.0.1` 的演示区覆盖 30 km/h、100 km/h、禁止超车、禁止 3.5 吨以上车辆超车和下个路口优先通行五个不同类别，比连续限速牌更能体现分类系统的展示意义。
+
 实际界面截图见 [`gui_preview.png`](gui_preview.png)。
 
 ### 自动测试
@@ -130,7 +132,7 @@ CLI 置信度：99.85%
 
 ### 便携发布验证
 
-本地 Release 共约 86 MiB。清空 Qt 与 Anaconda 路径后仍可启动，所需 Qt 模块全部来自 `codex/Release`。`v1.0.0` 打包流程会生成 Windows x64 版本化 ZIP、`VERSION.txt` 和 SHA-256 校验文件，并通过 GitHub Release 分发训练权重与 Qt 运行时；这些大文件不进入 Git 历史。
+本地 Release 共约 86 MiB。清空 Qt 与 Anaconda 路径后仍可启动，所需 Qt 模块全部来自 `codex/Release`。当前打包流程会生成 Windows x64 版本化 ZIP、`VERSION.txt` 和 SHA-256 校验文件，并通过 GitHub Release 分发训练权重与 Qt 运行时；这些大文件不进入 Git 历史。
 
 ## 8. 问题与改进
 

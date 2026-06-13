@@ -1,6 +1,6 @@
 # cppCNN 交通标志识别演示包
 
-本目录是 `v1.0.0` 面向教师演示的 Windows x64 便携包。完成本地打包后，无需安装 Qt、Visual Studio、Python、OpenCV，也无需重新训练。
+本目录是 `v1.0.1` 面向教师演示的 Windows x64 便携包。完成本地打包后，无需安装 Qt、Visual Studio、Python、OpenCV，也无需重新训练。
 
 ## 快速开始
 
@@ -16,7 +16,7 @@ run_demo.bat
 cppcnn_gui.exe
 ```
 
-在界面中点击任意演示图片即可显示 Top-1、置信度、推理时间和 Top-3。
+在界面中点击任意演示图片即可显示 Top-1、置信度、推理时间和 Top-3。五张图片分别展示限速、禁止超车、重型车辆限制和路口优先规则，不再是连续限速牌。
 
 快捷键：
 
@@ -61,7 +61,7 @@ Epoch：5
 .\codex\scripts\package_release.ps1 `
   -ModelPath .\codex\models\gtsrb_subset10.bin `
   -QtRoot C:\Qt\6.11.1\msvc2022_64 `
-  -Version 1.0.0
+  -Version 1.0.1
 ```
 
 如果模型或 Qt 组件缺失，脚本会明确报错并停止，不会生成残缺包。正式下载请使用仓库的 [GitHub Releases](https://github.com/f32797653-beep/cppCNN_vibecoding/releases/latest)。

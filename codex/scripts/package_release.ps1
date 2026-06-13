@@ -2,7 +2,7 @@ param(
     [string]$BuildDirectory = (Join-Path ([System.IO.Path]::GetTempPath()) "cppcnn-release-build"),
     [string]$ModelPath = "",
     [string]$QtRoot = "C:\Qt\6.11.1\msvc2022_64",
-    [string]$Version = "1.0.0",
+    [string]$Version = "1.0.1",
     [string]$ArtifactsDirectory = (Join-Path ([System.IO.Path]::GetTempPath()) "cppcnn-release-artifacts")
 )
 
@@ -48,11 +48,11 @@ if ($Version -notmatch '^\d+\.\d+\.\d+([-.][0-9A-Za-z.-]+)?$') {
 }
 
 $demoImages = @(
-    @{ Source = "test\00001\00001.ppm"; Destination = "01_speed_limit_30.ppm" },
-    @{ Source = "test\00002\00034.ppm"; Destination = "02_speed_limit_50.ppm" },
-    @{ Source = "test\00003\00036.ppm"; Destination = "03_speed_limit_60.ppm" },
-    @{ Source = "test\00004\00014.ppm"; Destination = "04_speed_limit_70.ppm" },
-    @{ Source = "test\00005\00030.ppm"; Destination = "05_speed_limit_80.ppm" }
+    @{ Source = "test\00001\00284.ppm"; Destination = "01_speed_limit_30.ppm" },
+    @{ Source = "test\00007\00366.ppm"; Destination = "02_speed_limit_100.ppm" },
+    @{ Source = "test\00009\00497.ppm"; Destination = "03_no_passing.ppm" },
+    @{ Source = "test\00010\00084.ppm"; Destination = "04_heavy_vehicle_no_passing.ppm" },
+    @{ Source = "test\00011\00601.ppm"; Destination = "05_intersection_priority.ppm" }
 )
 
 if (-not (Test-Path -LiteralPath $sourceDataset -PathType Container)) {

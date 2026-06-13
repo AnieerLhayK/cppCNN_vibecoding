@@ -20,7 +20,7 @@
   -ArtifactsDirectory D:\AI\data\codex\cache\staging\cppcnn-release-artifacts `
   -ModelPath .\codex\models\gtsrb_subset10.bin `
   -QtRoot C:\Qt\6.11.1\msvc2022_64 `
-  -Version 1.0.0
+  -Version 1.0.1
 ```
 
 脚本会完成：
@@ -38,7 +38,7 @@ ctest --test-dir D:\AI\data\codex\cache\staging\cppcnn-release-build `
   -C Release --output-on-failure
 
 Get-FileHash `
-  D:\AI\data\codex\cache\staging\cppcnn-release-artifacts\cppCNN-Traffic-Sign-Studio-v1.0.0-windows-x64.zip `
+  D:\AI\data\codex\cache\staging\cppcnn-release-artifacts\cppCNN-Traffic-Sign-Studio-v1.0.1-windows-x64.zip `
   -Algorithm SHA256
 ```
 
@@ -47,15 +47,14 @@ Get-FileHash `
 ## 创建 GitHub Release
 
 ```powershell
-gh release create v1.0.0 `
-  D:\AI\data\codex\cache\staging\cppcnn-release-artifacts\cppCNN-Traffic-Sign-Studio-v1.0.0-windows-x64.zip `
-  D:\AI\data\codex\cache\staging\cppcnn-release-artifacts\cppCNN-Traffic-Sign-Studio-v1.0.0-windows-x64.zip.sha256 `
+gh release create v1.0.1 `
+  D:\AI\data\codex\cache\staging\cppcnn-release-artifacts\cppCNN-Traffic-Sign-Studio-v1.0.1-windows-x64.zip `
+  D:\AI\data\codex\cache\staging\cppcnn-release-artifacts\cppCNN-Traffic-Sign-Studio-v1.0.1-windows-x64.zip.sha256 `
   --repo f32797653-beep/cppCNN_vibecoding `
   --target main `
-  --title "cppCNN Traffic Sign Studio v1.0.0" `
-  --notes-file .\codex\docs\release_notes_v1.0.0.md `
+  --title "cppCNN Traffic Sign Studio v1.0.1" `
+  --notes-file .\codex\docs\release_notes_v1.0.1.md `
   --latest
 ```
 
 正式发布前必须保证 `main` 已推送、CI 通过，并且版本号、标签和发布说明一致。
-

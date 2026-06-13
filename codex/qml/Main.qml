@@ -565,14 +565,14 @@ ApplicationWindow {
                         RowLayout {
                             Layout.fillWidth: true
                             Label {
-                                text: "Demo images"
+                                text: "Class showcase"
                                 color: window.textPrimary
                                 font.pixelSize: 15
                                 font.weight: Font.DemiBold
                                 Layout.fillWidth: true
                             }
                             Label {
-                                text: "Click a sample to load it"
+                                text: "5 distinct classes  |  Click to recognize"
                                 color: window.textSecondary
                                 font.pixelSize: 11
                             }

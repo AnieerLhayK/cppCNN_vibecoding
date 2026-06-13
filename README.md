@@ -4,7 +4,7 @@
 
 | 目录 | 实现 | 状态 |
 | --- | --- | --- |
-| [`codex/`](codex/) | Codex 协作完成的 GTSRB 交通标志识别系统 | `v1.0.0`，可训练、可推理、含 Qt GUI |
+| [`codex/`](codex/) | Codex 协作完成的 GTSRB 交通标志识别系统 | `v1.0.1`，可训练、可推理、含 Qt GUI |
 | `claude/` | 预留给 Claude 或其他工作流 | 待实现 |
 
 ## 当前发布

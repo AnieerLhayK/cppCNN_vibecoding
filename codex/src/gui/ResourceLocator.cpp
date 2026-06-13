@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QRegularExpression>
 #include <QTextStream>
 #include <QUrl>
 
@@ -77,9 +78,12 @@ QVariantList ResourceLocator::findDemoImages() {
         QDir::Name);
     for (const QFileInfo& file : files) {
         QVariantMap item;
+        QString displayName =
+            file.completeBaseName().replace(QLatin1Char('_'), QLatin1Char(' '));
+        displayName.remove(QRegularExpression(QStringLiteral("^\\d+\\s+")));
         item.insert(
             QStringLiteral("name"),
-            file.completeBaseName().replace(QLatin1Char('_'), QLatin1Char(' ')));
+            displayName);
         item.insert(QStringLiteral("url"), QUrl::fromLocalFile(file.absoluteFilePath()));
         results.push_back(item);
     }

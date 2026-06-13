@@ -55,7 +55,12 @@ void testModelAndPrediction(AppController& controller, const QString& sourceDire
 
     expect(controller.modelLoaded(), "The GUI did not auto-discover the development model.");
     expect(controller.classCount() == 10, "The GUI model class count is incorrect.");
-    expect(controller.applicationVersion() == QStringLiteral("1.0.0"), "The GUI version is incorrect.");
+    expect(controller.applicationVersion() == QStringLiteral("1.0.1"), "The GUI version is incorrect.");
+    expect(controller.demoImages().size() == 5, "The GUI demo class showcase is incomplete.");
+    expect(
+        controller.demoImages().front().toMap().value(QStringLiteral("name")).toString()
+            == QStringLiteral("speed limit 30"),
+        "The GUI demo label should omit its numeric sort prefix.");
 
     const QString demoPath = QDir(sourceDirectory).filePath(
         QStringLiteral("Release/demo_images/01_speed_limit_30.ppm"));
