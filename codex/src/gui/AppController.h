@@ -7,11 +7,11 @@
 #include <QFutureWatcher>
 #include <QImage>
 #include <QObject>
+#include <QStringList>
 #include <QUrl>
 #include <QVariantList>
 
 #include <memory>
-#include <vector>
 
 class AppController final : public QObject {
     Q_OBJECT
@@ -23,8 +23,10 @@ class AppController final : public QObject {
     Q_PROPERTY(QString modelPath READ modelPath NOTIFY modelChanged)
     Q_PROPERTY(QString labelsPath READ labelsPath NOTIFY modelChanged)
     Q_PROPERTY(QString modelDetails READ modelDetails NOTIFY modelChanged)
+    Q_PROPERTY(QString applicationVersion READ applicationVersion CONSTANT)
     Q_PROPERTY(QUrl imageUrl READ imageUrl NOTIFY imageChanged)
     Q_PROPERTY(QString imagePath READ imagePath NOTIFY imageChanged)
+    Q_PROPERTY(QString imageDetails READ imageDetails NOTIFY imageChanged)
     Q_PROPERTY(QString predictionLabel READ predictionLabel NOTIFY predictionChanged)
     Q_PROPERTY(double confidence READ confidence NOTIFY predictionChanged)
     Q_PROPERTY(qint64 inferenceMilliseconds READ inferenceMilliseconds NOTIFY predictionChanged)
@@ -45,8 +47,10 @@ public:
     [[nodiscard]] QString modelPath() const;
     [[nodiscard]] QString labelsPath() const;
     [[nodiscard]] QString modelDetails() const;
+    [[nodiscard]] QString applicationVersion() const;
     [[nodiscard]] QUrl imageUrl() const;
     [[nodiscard]] QString imagePath() const;
+    [[nodiscard]] QString imageDetails() const;
     [[nodiscard]] QString predictionLabel() const;
     [[nodiscard]] double confidence() const;
     [[nodiscard]] qint64 inferenceMilliseconds() const;
@@ -70,22 +74,19 @@ signals:
 private:
     void discoverResources();
     void applyModel(const QString& path);
-    void loadLabels();
-    void loadDemoImages();
     void clearPrediction();
     void setStatus(const QString& status, const QString& error = {});
     void finishPrediction();
     [[nodiscard]] static QString localPath(const QUrl& url);
-    [[nodiscard]] static QString firstExistingFile(const QStringList& candidates);
-    [[nodiscard]] static QStringList readLabels(const QString& path, std::size_t classCount);
 
     std::shared_ptr<cppcnn::CNN> network_;
     cppcnn::ModelInfo modelInfo_;
     cppcnn::Tensor inputTensor_;
-    std::vector<QString> labels_;
+    QStringList labels_;
     QFutureWatcher<PredictionPayload> watcher_;
     QUrl imageUrl_;
     QString imagePath_;
+    QString imageDetails_;
     QString modelPath_;
     QString labelsPath_;
     QString modelStatus_ = QStringLiteral("Model not loaded");

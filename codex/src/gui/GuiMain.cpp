@@ -8,6 +8,7 @@
 int main(int argc, char* argv[]) {
     QGuiApplication application(argc, argv);
     application.setApplicationName(QStringLiteral("cppCNN Traffic Sign Studio"));
+    application.setApplicationVersion(QStringLiteral(CPPCNN_VERSION));
     application.setOrganizationName(QStringLiteral("cppCNN Vibecoding"));
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 

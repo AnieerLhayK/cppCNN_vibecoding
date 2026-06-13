@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(CppCNNTrafficSign
-    VERSION 0.1.0
+    VERSION 1.0.0
     DESCRIPTION "Pure C++ CNN traffic sign recognition course project"
     LANGUAGES CXX
 )
@@ -73,7 +73,11 @@ if(CPPCNN_BUILD_GUI)
             src/gui/AppController.h
             src/gui/ImageBridge.cpp
             src/gui/ImageBridge.h
+            src/gui/InferenceEngine.cpp
+            src/gui/InferenceEngine.h
             src/gui/PredictionResult.h
+            src/gui/ResourceLocator.cpp
+            src/gui/ResourceLocator.h
         )
 
         qt_add_qml_module(cppcnn_gui
@@ -95,6 +99,9 @@ if(CPPCNN_BUILD_GUI)
             Qt6::Qml
             Qt6::QuickControls2
             Qt6::Concurrent
+        )
+        target_compile_definitions(cppcnn_gui PRIVATE
+            CPPCNN_VERSION="${PROJECT_VERSION}"
         )
         install(TARGETS cppcnn_gui RUNTIME DESTINATION .)
 
@@ -150,10 +157,15 @@ if(CPPCNN_BUILD_TESTS)
             src/gui/AppController.h
             src/gui/ImageBridge.cpp
             src/gui/ImageBridge.h
+            src/gui/InferenceEngine.cpp
+            src/gui/InferenceEngine.h
             src/gui/PredictionResult.h
+            src/gui/ResourceLocator.cpp
+            src/gui/ResourceLocator.h
         )
         target_compile_definitions(cppcnn_gui_tests PRIVATE
             CPPCNN_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+            CPPCNN_VERSION="${PROJECT_VERSION}"
         )
         target_link_libraries(cppcnn_gui_tests PRIVATE
             cppcnn_core
