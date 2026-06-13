@@ -1,3 +1,5 @@
 *
 !.gitignore
 !README.md
+!*.labels.txt
+!*_model_card.md

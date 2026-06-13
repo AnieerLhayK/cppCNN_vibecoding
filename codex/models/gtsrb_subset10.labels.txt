@@ -1,0 +1,10 @@
+30 km/h speed limit
+50 km/h speed limit
+60 km/h speed limit
+70 km/h speed limit
+80 km/h speed limit
+100 km/h speed limit
+120 km/h speed limit
+No passing
+No passing for vehicles over 3.5 t
+Right-of-way at the next intersection
