@@ -1,0 +1,20 @@
+{
+  "_comment": "CNN model architecture configuration for car logo recognition",
+
+  "input_channels": 3,
+  "input_size": [224, 224],
+
+  "conv_blocks": [
+    { "out_channels": 32,  "kernel_size": 3, "pool_size": 2, "dropout": 0.1 },
+    { "out_channels": 64,  "kernel_size": 3, "pool_size": 2, "dropout": 0.1 },
+    { "out_channels": 128, "kernel_size": 3, "pool_size": 2, "dropout": 0.2 },
+    { "out_channels": 256, "kernel_size": 3, "pool_size": 2, "dropout": 0.2 }
+  ],
+
+  "fc_layers": [512, 256],
+  "fc_dropout": 0.5,
+
+  "num_classes": 50,
+
+  "_note": "Adjust num_classes to match your dataset. Common car logo datasets have 40-200 classes."
+}

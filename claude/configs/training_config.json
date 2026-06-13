@@ -1,0 +1,25 @@
+{
+  "_comment": "Training hyperparameters for car logo CNN",
+
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "weight_decay": 0.0001,
+  "num_epochs": 50,
+
+  "train_split": 0.7,
+  "val_split": 0.15,
+  "test_split": 0.15,
+
+  "random_seed": 42,
+  "num_workers": 2,
+
+  "device": "auto",
+  "save_best_only": true,
+  "checkpoint_dir": "models/checkpoints",
+
+  "early_stop_patience": 10,
+  "lr_scheduler_step": 15,
+  "lr_scheduler_gamma": 0.1,
+
+  "_note": "Set device to 'cuda', 'cpu', or 'auto' for automatic detection."
+}

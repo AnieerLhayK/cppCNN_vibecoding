@@ -1,0 +1,47 @@
+# Python runtime
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Model checkpoints (large binary files)
+models/*.pth
+models/*.pt
+models/*.ckpt
+models/*.onnx
+models/checkpoints/
+!models/.gitkeep
+
+# Dataset files (large, should be downloaded separately)
+data/raw/
+data/processed/
+data/*.zip
+data/*.tar
+data/*.gz
+!data/.gitkeep
+!data/README.md
+
+# Logs and training artifacts
+logs/
+runs/
+*.log
+*.tmp
+*.bak
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
