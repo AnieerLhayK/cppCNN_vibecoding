@@ -18,6 +18,25 @@ ApplicationWindow {
     readonly property color textSecondary: "#92A1BC"
     readonly property color accent: "#7168EB"
 
+    Shortcut {
+        sequence: StandardKey.Open
+        onActivated: imageDialog.open()
+    }
+    Shortcut {
+        sequence: "Ctrl+M"
+        onActivated: modelDialog.open()
+    }
+    Shortcut {
+        sequence: "Ctrl+Return"
+        enabled: appController.modelLoaded && appController.imageLoaded && !appController.busy
+        onActivated: appController.predict()
+    }
+    Shortcut {
+        sequence: "Escape"
+        enabled: appController.imageLoaded && !appController.busy
+        onActivated: appController.clearImage()
+    }
+
     FileDialog {
         id: imageDialog
         title: "Choose a traffic sign image"
@@ -42,7 +61,9 @@ ApplicationWindow {
 
         contentItem: Label {
             padding: 18
-            text: "A pure C++ LeNet-style CNN demonstration for GTSRB traffic-sign recognition.\n\nThe Tensor, convolution, pooling, activation, fully connected, softmax, loss, training, persistence, and inference code is implemented in this repository. Qt is used for the desktop interface and image decoding."
+            text: "cppCNN Traffic Sign Studio " + appController.applicationVersion
+                + "\n\nA pure C++ LeNet-style CNN demonstration for GTSRB traffic-sign recognition."
+                + "\n\nThe Tensor, convolution, pooling, activation, fully connected, softmax, loss, training, persistence, and inference code is implemented in this repository. Qt is used for the desktop interface and image decoding."
             color: window.textPrimary
             wrapMode: Text.WordWrap
             lineHeight: 1.3
@@ -67,7 +88,7 @@ ApplicationWindow {
             spacing: 12
 
             Label {
-                text: appController.modelDetails
+                text: "Application " + appController.applicationVersion + "\n" + appController.modelDetails
                 color: window.textPrimary
                 font.pixelSize: 14
                 wrapMode: Text.WordWrap
@@ -134,6 +155,23 @@ ApplicationWindow {
                 }
 
                 Rectangle {
+                    implicitWidth: versionLabel.implicitWidth + 22
+                    implicitHeight: 30
+                    radius: 15
+                    color: "#1C1B36"
+                    border.color: "#46417A"
+
+                    Label {
+                        id: versionLabel
+                        anchors.centerIn: parent
+                        text: "v" + appController.applicationVersion
+                        color: "#BDB7F8"
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                    }
+                }
+
+                Rectangle {
                     implicitWidth: classLabel.implicitWidth + 24
                     implicitHeight: 30
                     radius: 15
@@ -152,11 +190,13 @@ ApplicationWindow {
                 AppButton {
                     text: "Settings"
                     compact: true
+                    toolTip: "View model paths and runtime details"
                     onClicked: settingsDialog.open()
                 }
                 AppButton {
                     text: "About"
                     compact: true
+                    toolTip: "About this pure C++ CNN project"
                     onClicked: aboutDialog.open()
                 }
             }
@@ -242,11 +282,18 @@ ApplicationWindow {
                                         elide: Text.ElideMiddle
                                         Layout.maximumWidth: 510
                                     }
+                                    Label {
+                                        visible: appController.imageLoaded
+                                        text: appController.imageDetails + " | CNN input 32 x 32 RGB"
+                                        color: "#687A9B"
+                                        font.pixelSize: 11
+                                    }
                                 }
 
                                 AppButton {
                                     text: "Clear"
                                     compact: true
+                                    toolTip: "Clear image (Esc)"
                                     enabled: appController.imageLoaded && !appController.busy
                                     onClicked: appController.clearImage()
                                 }
@@ -254,6 +301,7 @@ ApplicationWindow {
                                     text: "Open image"
                                     compact: true
                                     accent: true
+                                    toolTip: "Open image (Ctrl+O)"
                                     enabled: !appController.busy
                                     onClicked: imageDialog.open()
                                 }
@@ -313,7 +361,7 @@ ApplicationWindow {
                                     Label {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         width: parent.width
-                                        text: "Or use Open image to choose a local file. It will be resized to 32 × 32 and normalized for the CNN."
+                                        text: "Or use Open image to choose a local file. It will be resized to 32 x 32 and normalized for the CNN."
                                         color: window.textSecondary
                                         font.pixelSize: 13
                                         horizontalAlignment: Text.AlignHCenter
@@ -344,7 +392,7 @@ ApplicationWindow {
                         ColumnLayout {
                             anchors.fill: parent
                             anchors.margins: 20
-                            spacing: 16
+                            spacing: 12
 
                             Label {
                                 text: "Prediction"
@@ -353,9 +401,35 @@ ApplicationWindow {
                                 font.weight: Font.DemiBold
                             }
 
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                InfoChip {
+                                    Layout.fillWidth: true
+                                    title: "MODEL"
+                                    value: appController.modelLoaded ? "Ready" : "Missing"
+                                    complete: appController.modelLoaded
+                                }
+                                InfoChip {
+                                    Layout.fillWidth: true
+                                    title: "IMAGE"
+                                    value: appController.imageLoaded ? "Loaded" : "Waiting"
+                                    complete: appController.imageLoaded
+                                }
+                                InfoChip {
+                                    Layout.fillWidth: true
+                                    title: "RESULT"
+                                    value: appController.busy
+                                        ? "Running"
+                                        : (appController.confidence > 0 ? "Complete" : "Waiting")
+                                    complete: appController.confidence > 0
+                                }
+                            }
+
                             Rectangle {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 170
+                                Layout.preferredHeight: 145
                                 radius: 13
                                 color: "#10192B"
                                 border.color: appController.confidence > 0 ? "#4C477F" : "#25344F"
@@ -471,6 +545,7 @@ ApplicationWindow {
                                 Layout.fillWidth: true
                                 text: appController.busy ? "Recognizing..." : "Recognize sign"
                                 accent: true
+                                toolTip: "Run CNN inference (Ctrl+Enter)"
                                 enabled: appController.modelLoaded && appController.imageLoaded && !appController.busy
                                 onClicked: appController.predict()
                             }
@@ -517,7 +592,10 @@ ApplicationWindow {
                                     Layout.minimumWidth: 130
                                     radius: 10
                                     color: sampleMouse.containsMouse ? "#202D47" : "#172238"
-                                    border.color: sampleMouse.containsMouse ? "#6257DD" : "#2A3955"
+                                    border.color: appController.imageUrl.toString() === modelData.url.toString()
+                                        ? "#8B82FF"
+                                        : (sampleMouse.containsMouse ? "#6257DD" : "#2A3955")
+                                    border.width: appController.imageUrl.toString() === modelData.url.toString() ? 2 : 1
 
                                     RowLayout {
                                         anchors.fill: parent
@@ -613,6 +691,12 @@ ApplicationWindow {
                     font.pixelSize: 11
                     elide: Text.ElideMiddle
                     Layout.maximumWidth: 390
+                }
+                Label {
+                    text: "Ctrl+O Open  |  Ctrl+Enter Recognize  |  Esc Clear"
+                    color: "#4F607C"
+                    font.pixelSize: 10
+                    visible: window.width >= 1250
                 }
             }
         }

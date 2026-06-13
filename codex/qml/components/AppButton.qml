@@ -5,10 +5,17 @@ Button {
     id: control
     property bool accent: false
     property bool compact: false
+    property string toolTip: ""
 
     implicitHeight: compact ? 36 : 44
     implicitWidth: Math.max(compact ? 92 : 124, contentItem.implicitWidth + 28)
     hoverEnabled: true
+    focusPolicy: Qt.StrongFocus
+    Accessible.name: text
+
+    ToolTip.visible: hovered && toolTip.length > 0
+    ToolTip.text: toolTip
+    ToolTip.delay: 500
 
     contentItem: Label {
         text: control.text
@@ -30,7 +37,10 @@ Button {
                 return control.accent ? "#7065EA" : "#202D47"
             return control.accent ? "#6257DD" : "#18243A"
         }
-        border.color: control.accent ? "#8076F4" : "#2A3A58"
+        border.color: control.activeFocus
+            ? "#A8A1FF"
+            : (control.accent ? "#8076F4" : "#2A3A58")
+        border.width: control.activeFocus ? 2 : 1
 
         Behavior on color {
             ColorAnimation { duration: 120 }

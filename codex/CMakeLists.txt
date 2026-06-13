@@ -86,6 +86,7 @@ if(CPPCNN_BUILD_GUI)
             QML_FILES
                 qml/Main.qml
                 qml/components/AppButton.qml
+                qml/components/InfoChip.qml
                 qml/components/Panel.qml
                 qml/components/ProbabilityBar.qml
                 qml/components/StatusPill.qml

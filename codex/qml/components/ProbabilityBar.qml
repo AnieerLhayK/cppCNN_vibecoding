@@ -8,7 +8,7 @@ Item {
     property int classId: -1
     property real confidence: 0
 
-    implicitHeight: 58
+    implicitHeight: 50
 
     Row {
         id: heading
