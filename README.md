@@ -1,33 +1,42 @@
 # cppCNN Vibe Coding
 
-本仓库用于比较不同 AI 平台或协作方式如何完成 CNN 工程任务。每个一级目录代表一种独立实现，语言和技术路线可能不同：
+本仓库比较不同 AI 协作平台完成 CNN 项目的实现方式。各一级目录是相互独立的技术路线，不共享数据集、模型格式或运行时依赖。
 
-| 目录 | 实现 | 状态 |
-| --- | --- | --- |
-| [`codex/`](codex/) | Codex 协作完成的 GTSRB 交通标志识别系统 | `v1.0.1`，可训练、可推理、含 Qt GUI |
-| [`claude/`](claude/) | Claude 协作完成的 Python/PyTorch 控制台车标识别原型 | 已迁入，可训练、评估、推理并含单元测试 |
+| 目录 | 技术路线 | 定位 | 状态 |
+| --- | --- | --- | --- |
+| [`codex/`](codex/) | C++17、手写 CNN、Qt Quick | 课程主交付：GTSRB 交通标志识别 | `v1.1.0`，可训练、评估、推理和直接演示 |
+| [`claude/`](claude/) | Python、PyTorch、控制台 | 对照原型：车标分类 | 源码与 23 项单元测试完整，尚无数据集和训练权重 |
 
 ## 当前发布
 
 - [下载最新 GitHub Release](https://github.com/f32797653-beep/cppCNN_vibecoding/releases/latest)
-- [查看 Codex 实现说明](codex/README.md)
-- [查看项目报告](codex/docs/project_report.md)
-- [查看版本变化](codex/CHANGELOG.md)
+- [Codex 主实现说明](codex/README.md)
+- [Claude 对照原型说明](claude/README.md)
+- [Codex 项目报告](codex/docs/project_report.md)
+- [版本变化](codex/CHANGELOG.md)
 
-GitHub Release 的 Windows x64 ZIP 包含可执行程序、Qt 运行库、训练好的 10 类模型、标签和演示图片。源码仓库本身不提交数据集或模型权重。
+GitHub Release 的 Windows x64 ZIP 是 `codex/` 主实现的教师演示包，包含可执行程序、Qt 运行库、训练好的 10 类模型、标签和多类别演示图片。`claude/` 随源码标签发布，不提供预训练权重或独立可执行包。
 
-共同约定：
+## 仓库约定
 
-- 数据集、训练权重和临时构建产物不进入 Git。
-- 每种实现独立维护源码、构建配置、测试、文档和实验记录。
-- 稳定阶段使用清晰的 Git commit，并保持主分支可构建。
+- 数据集、训练权重、缓存和临时构建产物不进入 Git。
+- 每种实现独立维护源码、配置、测试和文档。
+- `codex/` 满足纯 C++ CNN 课程要求，不调用深度学习框架。
+- `claude/` 使用 PyTorch，仅用于技术路线比较，不能替代纯 C++ 主交付。
 
-实现差异：
+## 快速验证
 
-- `codex/` 的 CNN 数值核心使用纯 C++，不调用深度学习框架。
-- `claude/` 是 Python/PyTorch 控制台原型，不应被描述为满足纯 C++ 契约。
+Codex：
 
-完整说明：
+```powershell
+cmake -S codex -B codex/build -DCPPCNN_BUILD_GUI=OFF
+cmake --build codex/build --config Release
+ctest --test-dir codex/build -C Release --output-on-failure
+```
 
-- Codex 版本：[`codex/README.md`](codex/README.md)
-- Claude 原型：[`claude/README.md`](claude/README.md)
+Claude：
+
+```powershell
+python -m pip install -r claude/requirements.txt
+python -m pytest -q claude/tests
+```

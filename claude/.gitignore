@@ -19,6 +19,7 @@ models/*.ckpt
 models/*.onnx
 models/checkpoints/
 !models/.gitkeep
+!models/README.md
 
 # Dataset files (large, should be downloaded separately)
 data/raw/

@@ -2,7 +2,7 @@ param(
     [string]$BuildDirectory = (Join-Path ([System.IO.Path]::GetTempPath()) "cppcnn-release-build"),
     [string]$ModelPath = "",
     [string]$QtRoot = "C:\Qt\6.11.1\msvc2022_64",
-    [string]$Version = "1.0.1",
+    [string]$Version = "1.1.0",
     [string]$ArtifactsDirectory = (Join-Path ([System.IO.Path]::GetTempPath()) "cppcnn-release-artifacts")
 )
 

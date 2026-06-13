@@ -2,7 +2,7 @@
 
 ## 项目简介
 
-这是 `cppCNN_vibecoding` 仓库的 Codex 实现，当前稳定版本为 `v1.0.1`。项目使用 C++17 从零实现 LeNet 风格 CNN 的 Tensor、卷积、池化、激活、全连接、Softmax、损失、反向传播、训练和模型持久化，并使用 Qt Quick/QML 提供现代桌面界面。
+这是 `cppCNN_vibecoding` 仓库的 Codex 主实现，当前稳定版本为 `v1.1.0`。项目使用 C++17 从零实现 LeNet 风格 CNN 的 Tensor、卷积、池化、激活、全连接、Softmax、损失、反向传播、训练和模型持久化，并使用 Qt Quick/QML 提供现代桌面界面。
 
 OpenCV 是可选依赖，仅用于 CLI 的常见图片读取和显示。Qt GUI 使用 `QImage` 读取 PPM、PNG、JPEG 和 BMP，不依赖 OpenCV，也不使用 PyTorch、TensorFlow 或 Keras。
 
@@ -106,11 +106,13 @@ GUI：
 1. 可执行文件同级的 `models/gtsrb_subset10.bin`
 2. 开发目录 `codex/models/gtsrb_subset10.bin`
 
-标签搜索顺序：
+加载模型后的标签搜索顺序：
 
-1. 可执行文件同级 `labels.txt`
-2. `datasets/GTSRB_subset/labels.txt`
-3. `assets/labels.txt`
+1. 模型同目录的 `<模型文件名>.labels.txt`
+2. 模型同目录的 `labels.txt`
+3. 可执行文件同级 `labels.txt`
+4. `datasets/GTSRB_subset/labels.txt`
+5. `assets/labels.txt`
 
 CLI 训练：
 
@@ -158,7 +160,7 @@ CLI 单图预测：
   -ArtifactsDirectory D:\AI\data\codex\cache\staging\cppcnn-release-artifacts `
   -ModelPath .\codex\models\gtsrb_subset10.bin `
   -QtRoot C:\Qt\6.11.1\msvc2022_64 `
-  -Version 1.0.1
+  -Version 1.1.0
 ```
 
 完成后双击 [`Release/run_demo.bat`](Release/run_demo.bat)。脚本还会在临时目录生成版本化 ZIP 和 `.sha256` 校验文件。发布包包含 GUI、CLI、Qt DLL、QML 模块、插件、模型、标签和演示图。
