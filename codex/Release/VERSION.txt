@@ -1,0 +1,2 @@
+cppCNN Traffic Sign Studio 1.0.0
+Windows x64 portable release

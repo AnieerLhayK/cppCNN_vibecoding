@@ -26,7 +26,7 @@ L = -log(p_y)
 2. 数据层：图片预处理、GTSRB 扫描和标签映射。
 3. 训练层：损失、反向传播、SGD、保存和评估。
 4. 应用层：CLI 命令与资源检查。
-5. 交互层：Qt Quick GUI、后台推理和便携部署。
+5. 交互层：Qt Quick GUI、运行时资源发现、后台推理和便携部署。
 
 核心层不依赖 Qt、OpenCV 或深度学习框架。GUI 通过 `ImageBridge` 将 `QImage` 转为核心 Tensor。
 
@@ -71,7 +71,9 @@ Softmax             输出 N 类概率
 - `CNN`：网络拓扑、预测和自定义模型格式。
 - `Trainer`：训练循环、损失和准确率统计。
 - `DataLoader`：官方 GTSRB 与子集目录读取。
-- `AppController`：模型发现、图片加载、Top-3 和后台推理。
+- `ResourceLocator`：统一查找开发目录和便携目录中的模型、标签与演示图。
+- `InferenceEngine`：执行前向推理、Top-3 排序和耗时统计。
+- `AppController`：协调模型状态、图片状态、异步任务与可读错误。
 - `Main.qml`：深色仪表盘式交互界面。
 
 ## 7. 实验结果
@@ -128,7 +130,7 @@ CLI 置信度：99.85%
 
 ### 便携发布验证
 
-本地 Release 共约 86.2 MiB。清空 Qt 与 Anaconda 路径后仍可启动，加载的 19 个 Qt 模块全部来自 `codex/Release`。
+本地 Release 共约 86 MiB。清空 Qt 与 Anaconda 路径后仍可启动，所需 Qt 模块全部来自 `codex/Release`。`v1.0.0` 打包流程会生成 Windows x64 版本化 ZIP、`VERSION.txt` 和 SHA-256 校验文件，并通过 GitHub Release 分发训练权重与 Qt 运行时；这些大文件不进入 Git 历史。
 
 ## 8. 问题与改进
 
@@ -136,7 +138,7 @@ CLI 置信度：99.85%
 - 当前无数据增强、Adam、BatchNorm、验证集早停。
 - GUI 暂不承担训练任务。
 - 模型格式使用本机二进制字节序，主要面向 Windows/MSVC。
-- Git 不保存训练权重，最终公开分发宜使用 GitHub Release 资产。
+- Git 不保存训练权重，公开分发使用 GitHub Release 资产。
 
 后续可增加 OpenMP/SIMD、im2col、数据增强、混淆矩阵、批量预测、训练进度页面和完整 43 类模型。
 
