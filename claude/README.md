@@ -1,5 +1,9 @@
 # Car Logo Recognition — CNN
 
+> Project root: this implementation belongs to the containing
+> `cppCNN_vibecoding` Git repository. Start Claude Code from that repository,
+> not from `D:\AI\workspace`.
+
 A convolutional neural network project for recognizing vehicle brand logos from images.
 Console-based pipeline with modular scripts, configuration-driven architecture,
 and full training/evaluation/inference workflow.
