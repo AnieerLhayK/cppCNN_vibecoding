@@ -30,6 +30,16 @@ QString ResourceLocator::findLabels() {
     });
 }
 
+QString ResourceLocator::findLabelsForModel(const QString& modelPath) {
+    const QFileInfo model(modelPath);
+    const QString companionLabels =
+        QDir(model.absolutePath()).filePath(model.completeBaseName() + QStringLiteral(".labels.txt"));
+    const QString sharedLabels =
+        QDir(model.absolutePath()).filePath(QStringLiteral("labels.txt"));
+    const QString modelSpecific = firstExistingFile({companionLabels, sharedLabels});
+    return modelSpecific.isEmpty() ? findLabels() : modelSpecific;
+}
+
 QStringList ResourceLocator::readLabels(
     const QString& path,
     const std::size_t classCount) {

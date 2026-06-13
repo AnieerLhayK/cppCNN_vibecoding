@@ -8,6 +8,14 @@
 models/gtsrb_subset10.bin
 ```
 
+语义均衡开发模型：
+
+```text
+models/gtsrb_semantic10.bin
+```
+
+两个模型使用不同类别映射，必须配合各自同名的 `.labels.txt`。GUI 会优先查找模型同目录下的同名标签文件。训练日志与元数据分别使用 `.training.log` 和 `.metadata.json`，不进入 Git。
+
 ## 自定义格式
 
 模型使用 `CPPCNN1` 二进制格式：
@@ -26,10 +34,20 @@ models/gtsrb_subset10.bin
 
 ## 训练
 
+推荐使用带命名参数、自动评估和归档功能的开发脚本：
+
+```powershell
+.\scripts\train_model.ps1
+```
+
+完整说明见 [`../docs/developer_training.md`](../docs/developer_training.md)。
+
+底层 CLI：
+
 ```powershell
 .\build\Release\cppcnn_app.exe train `
   datasets\GTSRB_subset `
-  models\gtsrb_subset10.bin 10 5 0
+  models\gtsrb_subset10.bin 10 5 0 16 0.01 0.0001 42
 ```
 
 模型缺失时，CLI 会给出训练提示；GUI 会安全打开、显示“Model missing”并允许选择模型，不会崩溃或使用随机权重预测。

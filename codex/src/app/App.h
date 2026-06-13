@@ -28,6 +28,10 @@ private:
         const std::string& value,
         const std::string& argumentName,
         bool allowZero = false);
+    static float parseFloat(
+        const std::string& value,
+        const std::string& argumentName,
+        bool allowZero = false);
     static std::vector<std::string> loadLabels(
         const std::filesystem::path& path,
         std::size_t classCount);

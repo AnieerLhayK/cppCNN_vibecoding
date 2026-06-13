@@ -23,6 +23,8 @@
 - `gui/AppController`：GUI 状态、异步任务和错误反馈的协调器。
 - `qml/`：只负责界面呈现与用户交互，不执行 CNN 数值计算。
 
+训练属于开发者工作流，不嵌入 GUI。`scripts/train_model.ps1` 组合子集工具、CLI、CTest、评估和元数据记录；GUI 只加载经过开发者确认的模型。
+
 ## 网络数据流
 
 ```text

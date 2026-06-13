@@ -91,8 +91,10 @@ codex/datasets/GTSRB/
 参数依次为：
 
 ```text
-<完整数据根目录> <输出目录> <类别数> <每类训练图片数>
+<完整数据根目录> <输出目录> <类别数> <每类训练图片数> [类别ID列表]
 ```
+
+类别 ID 列表是可选的逗号分隔值。省略时自动选择样本数充足且 ID 最小的类别；提供时会严格使用指定类别。
 
 每类图片数必须在 500 到 1000 之间。工具会：
 
@@ -112,11 +114,22 @@ test_images=5670
 class_ids=1,2,3,4,5,7,8,9,10,11
 ```
 
+语义均衡 10 类：
+
+```powershell
+.\build\Release\cppcnn_create_subset.exe `
+  datasets\GTSRB datasets\GTSRB_semantic10 `
+  10 500 "2,9,11,13,14,17,18,25,28,38"
+```
+
+结果为 5,000 张数量均衡的训练图和 4,710 张官方测试图。推荐直接使用 [`developer_training.md`](developer_training.md) 中的一体化训练脚本。
+
 开发阶段推荐：
 
 ```powershell
 .\build\Release\cppcnn_app.exe train `
-  datasets\GTSRB_subset models\gtsrb_subset10.bin 10 5 0
+  datasets\GTSRB_subset models\gtsrb_subset10.bin `
+  10 5 0 16 0.01 0.0001 42
 
 .\build\Release\cppcnn_app.exe evaluate `
   datasets\GTSRB_subset models\gtsrb_subset10.bin 0

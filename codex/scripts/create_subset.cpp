@@ -76,6 +76,37 @@ int parsePositive(const char* value, const char* name) {
     return result;
 }
 
+std::vector<int> parseClassIds(const char* value) {
+    std::vector<int> classIds;
+    std::set<int> uniqueIds;
+    std::stringstream stream(value);
+    std::string field;
+    while (std::getline(stream, field, ',')) {
+        if (field.empty()) {
+            throw std::invalid_argument("class_ids must not contain empty values.");
+        }
+        int classId = -1;
+        const auto parsed =
+            std::from_chars(field.data(), field.data() + field.size(), classId);
+        if (parsed.ec != std::errc()
+            || parsed.ptr != field.data() + field.size()
+            || classId < 0
+            || classId >= static_cast<int>(classNames.size())) {
+            throw std::invalid_argument(
+                "class_ids must contain unique GTSRB IDs from 0 to 42.");
+        }
+        if (!uniqueIds.insert(classId).second) {
+            throw std::invalid_argument("class_ids must not contain duplicates.");
+        }
+        classIds.push_back(classId);
+    }
+    if (classIds.empty()) {
+        throw std::invalid_argument("class_ids must contain at least one class.");
+    }
+    std::sort(classIds.begin(), classIds.end());
+    return classIds;
+}
+
 std::filesystem::path findExisting(
     const std::vector<std::filesystem::path>& candidates,
     const std::string& description) {
@@ -166,8 +197,15 @@ int main(int argc, char* argv[]) {
         const int classCount = argc > 3 ? parsePositive(argv[3], "class_count") : 10;
         const int trainingImagesPerClass =
             argc > 4 ? parsePositive(argv[4], "images_per_class") : 1000;
+        const std::vector<int> requestedClassIds =
+            argc > 5 ? parseClassIds(argv[5]) : std::vector<int>{};
         if (trainingImagesPerClass < 500 || trainingImagesPerClass > 1000) {
             throw std::invalid_argument("images_per_class must be between 500 and 1000.");
+        }
+        if (!requestedClassIds.empty()
+            && requestedClassIds.size() != static_cast<std::size_t>(classCount)) {
+            throw std::invalid_argument(
+                "class_count must match the number of explicit class_ids.");
         }
 
         const auto trainingRoot = findExisting({
@@ -183,25 +221,45 @@ int main(int argc, char* argv[]) {
             sourceRoot / "GTSRB" / "GT-final_test.csv",
         }, "GTSRB GT-final_test.csv");
 
-        std::vector<std::pair<int, std::vector<std::filesystem::path>>> eligibleClasses;
+        std::map<int, std::vector<std::filesystem::path>> availableClasses;
         for (const auto& entry : std::filesystem::directory_iterator(trainingRoot)) {
             if (!entry.is_directory()) {
                 continue;
             }
             const int classId = std::stoi(entry.path().filename().string());
-            auto images = listImages(entry.path());
-            if (images.size() >= static_cast<std::size_t>(trainingImagesPerClass)) {
-                eligibleClasses.emplace_back(classId, std::move(images));
+            availableClasses.emplace(classId, listImages(entry.path()));
+        }
+
+        std::vector<std::pair<int, std::vector<std::filesystem::path>>> eligibleClasses;
+        if (!requestedClassIds.empty()) {
+            for (const int classId : requestedClassIds) {
+                const auto found = availableClasses.find(classId);
+                if (found == availableClasses.end()) {
+                    throw std::runtime_error(
+                        "Requested GTSRB class is missing: " + std::to_string(classId));
+                }
+                if (found->second.size()
+                    < static_cast<std::size_t>(trainingImagesPerClass)) {
+                    throw std::runtime_error(
+                        "Requested class " + std::to_string(classId)
+                        + " contains only " + std::to_string(found->second.size())
+                        + " training images; requested "
+                        + std::to_string(trainingImagesPerClass) + ".");
+                }
+                eligibleClasses.emplace_back(classId, found->second);
             }
+        } else {
+            for (auto& [classId, images] : availableClasses) {
+                if (images.size() >= static_cast<std::size_t>(trainingImagesPerClass)) {
+                    eligibleClasses.emplace_back(classId, std::move(images));
+                }
+            }
+            if (eligibleClasses.size() < static_cast<std::size_t>(classCount)) {
+                throw std::runtime_error(
+                    "Not enough classes contain the requested number of training images.");
+            }
+            eligibleClasses.resize(static_cast<std::size_t>(classCount));
         }
-        std::sort(eligibleClasses.begin(), eligibleClasses.end(), [](const auto& left, const auto& right) {
-            return left.first < right.first;
-        });
-        if (eligibleClasses.size() < static_cast<std::size_t>(classCount)) {
-            throw std::runtime_error(
-                "Not enough classes contain the requested number of training images.");
-        }
-        eligibleClasses.resize(static_cast<std::size_t>(classCount));
 
         prepareOutput(outputRoot);
         std::set<int> selectedClassIds;
@@ -254,6 +312,11 @@ int main(int argc, char* argv[]) {
         std::cout
             << "Created GTSRB subset at: " << std::filesystem::absolute(outputRoot).string() << '\n'
             << "Classes: " << classCount << '\n'
+            << "Class IDs: ";
+        for (std::size_t index = 0; index < eligibleClasses.size(); ++index) {
+            std::cout << (index == 0 ? "" : ",") << eligibleClasses[index].first;
+        }
+        std::cout << '\n'
             << "Training images: " << copiedTraining << '\n'
             << "Test images: " << copiedTest << '\n';
         return 0;

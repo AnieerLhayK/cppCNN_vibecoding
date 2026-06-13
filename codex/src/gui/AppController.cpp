@@ -214,7 +214,7 @@ void AppController::applyModel(const QString& path) {
         const cppcnn::ModelInfo info = cppcnn::CNN::inspectModel(nativePath);
         auto network = std::make_shared<cppcnn::CNN>(info.classCount);
         network->loadModel(nativePath);
-        const QString labelsPath = ResourceLocator::findLabels();
+        const QString labelsPath = ResourceLocator::findLabelsForModel(path);
         const QStringList labels =
             ResourceLocator::readLabels(labelsPath, info.classCount);
 

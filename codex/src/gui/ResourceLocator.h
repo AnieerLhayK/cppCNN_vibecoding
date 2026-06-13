@@ -10,6 +10,7 @@ class ResourceLocator {
 public:
     [[nodiscard]] static QString findDefaultModel();
     [[nodiscard]] static QString findLabels();
+    [[nodiscard]] static QString findLabelsForModel(const QString& modelPath);
     [[nodiscard]] static QStringList readLabels(
         const QString& path,
         std::size_t classCount);

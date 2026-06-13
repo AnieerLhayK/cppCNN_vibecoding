@@ -1,5 +1,6 @@
 #include "cnn/CNN.h"
 #include "gui/AppController.h"
+#include "gui/ResourceLocator.h"
 #include "image/ImageProcessor.h"
 
 #include <QCoreApplication>
@@ -43,6 +44,27 @@ void testImageFormats(AppController& controller) {
         expect(controller.imageLoaded(), "The GUI controller could not load a supported image.");
         expect(controller.errorText().isEmpty(), "A supported image produced an error state.");
     }
+}
+
+void testCompanionLabels() {
+    QTemporaryDir directory;
+    expect(directory.isValid(), "Could not create the companion-label test directory.");
+    const QString modelPath = directory.filePath(QStringLiteral("semantic.bin"));
+    const QString labelsPath = directory.filePath(QStringLiteral("semantic.labels.txt"));
+    QFile labels(labelsPath);
+    expect(
+        labels.open(QIODevice::WriteOnly | QIODevice::Text),
+        "Could not create companion labels.");
+    labels.write("Yield\nStop\n");
+    labels.close();
+
+    expect(
+        ResourceLocator::findLabelsForModel(modelPath) == labelsPath,
+        "Model-specific companion labels were not selected.");
+    const QStringList values = ResourceLocator::readLabels(labelsPath, 2);
+    expect(
+        values == QStringList({QStringLiteral("Yield"), QStringLiteral("Stop")}),
+        "Companion labels were not read in model output order.");
 }
 
 void testModelAndPrediction(AppController& controller, const QString& sourceDirectory) {
@@ -100,6 +122,15 @@ void testModelAndPrediction(AppController& controller, const QString& sourceDire
         QDir(sourceDirectory).filePath(QStringLiteral("models/missing-model.bin"))));
     expect(controller.modelLoaded(), "A failed model replacement must preserve the working model.");
     expect(!controller.errorText().isEmpty(), "A missing model must produce a visible error.");
+
+    const QString semanticModelPath =
+        QDir(sourceDirectory).filePath(QStringLiteral("models/gtsrb_semantic10.bin"));
+    if (QFileInfo::exists(semanticModelPath)) {
+        controller.loadModel(QUrl::fromLocalFile(semanticModelPath));
+        expect(
+            controller.labelsPath().endsWith(QStringLiteral("gtsrb_semantic10.labels.txt")),
+            "The semantic model did not load its companion labels.");
+    }
 }
 
 }  // namespace
@@ -115,6 +146,7 @@ int main(int argc, char* argv[]) {
 
         AppController controller;
         testImageFormats(controller);
+        testCompanionLabels();
         testModelAndPrediction(controller, sourceDirectory);
         std::cout << "All GUI controller tests passed.\n";
         return EXIT_SUCCESS;

@@ -27,6 +27,8 @@ x64/
 /models/*.bin
 /models/*.model
 /models/*.weights
+/models/*.metadata.json
+/models/archive/
 /data/
 /dataset/
 /demo_data/

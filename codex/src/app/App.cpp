@@ -90,6 +90,14 @@ int App::runTrain(const std::vector<std::string>& arguments) {
         arguments.size() > 3 ? parseSize(arguments[3], "epochs") : 5;
     const std::size_t samplesPerClass =
         arguments.size() > 4 ? parseSize(arguments[4], "samples_per_class", true) : 0;
+    const std::size_t batchSize =
+        arguments.size() > 5 ? parseSize(arguments[5], "batch_size") : 16;
+    const float learningRate =
+        arguments.size() > 6 ? parseFloat(arguments[6], "learning_rate") : 0.01F;
+    const float weightDecay =
+        arguments.size() > 7 ? parseFloat(arguments[7], "weight_decay", true) : 0.0001F;
+    const std::size_t seed =
+        arguments.size() > 8 ? parseSize(arguments[8], "seed", true) : 42;
     requireDataset(arguments[0], "training");
 
     DataLoaderOptions loaderOptions;
@@ -103,10 +111,19 @@ int App::runTrain(const std::vector<std::string>& arguments) {
     CNN network(trainingSet.classCount());
     TrainingOptions trainingOptions;
     trainingOptions.epochs = epochs;
+    trainingOptions.batchSize = batchSize;
+    trainingOptions.learningRate = learningRate;
+    trainingOptions.weightDecay = weightDecay;
+    trainingOptions.seed = static_cast<std::uint32_t>(seed);
 
     std::cout
         << "Training samples: " << trainingSet.size() << '\n'
-        << "Classes: " << trainingSet.classCount() << '\n';
+        << "Classes: " << trainingSet.classCount() << '\n'
+        << "Epochs: " << trainingOptions.epochs << '\n'
+        << "Batch size: " << trainingOptions.batchSize << '\n'
+        << "Learning rate: " << trainingOptions.learningRate << '\n'
+        << "Weight decay: " << trainingOptions.weightDecay << '\n'
+        << "Seed: " << trainingOptions.seed << '\n';
     Trainer::train(
         network,
         trainingSet,
@@ -203,7 +220,8 @@ void App::printUsage() {
         << "Pure C++ CNN traffic sign recognizer\n\n"
         << "Usage:\n"
         << "  cppcnn_app train <train_dir> <model> [class_count=10]"
-           " [epochs=5] [samples_per_class=0]\n"
+           " [epochs=5] [samples_per_class=0] [batch_size=16]"
+           " [learning_rate=0.01] [weight_decay=0.0001] [seed=42]\n"
         << "  cppcnn_app evaluate <test_dir> <model> [samples_per_class=0]\n"
         << "  cppcnn_app predict <image> <model> [labels_file]\n"
         << "  cppcnn_app interactive <model> [labels_file]\n"
@@ -274,6 +292,25 @@ std::size_t App::parseSize(
             argumentName + (allowZero ? " must be a non-negative integer." : " must be positive."));
     }
     return static_cast<std::size_t>(parsed);
+}
+
+float App::parseFloat(
+    const std::string& value,
+    const std::string& argumentName,
+    const bool allowZero) {
+    std::size_t parsedCharacters = 0;
+    float parsed = 0.0F;
+    try {
+        parsed = std::stof(value, &parsedCharacters);
+    } catch (const std::exception&) {
+        throw std::invalid_argument(argumentName + " must be a number.");
+    }
+    if (parsedCharacters != value.size()
+        || (allowZero ? parsed < 0.0F : parsed <= 0.0F)) {
+        throw std::invalid_argument(
+            argumentName + (allowZero ? " must be non-negative." : " must be positive."));
+    }
+    return parsed;
 }
 
 std::vector<std::string> App::loadLabels(
