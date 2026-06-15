@@ -58,3 +58,16 @@ gh release create v1.1.0 `
 ```
 
 正式发布前必须保证 `main` 已推送、CI 通过，并且版本号、标签和发布说明一致。
+
+## 生成课程报告资料包
+
+在完整便携应用已经生成后执行：
+
+```powershell
+.\codex\scripts\package_report_kit.ps1 `
+  -Version 1.1.0 `
+  -ApplicationDirectory .\codex\Release `
+  -OutputDirectory D:\AI\data\codex\cache\staging\cppcnn-report-kit
+```
+
+生成的 `cppCNN-Codex-Report-Kit-v1.1.0.zip` 作为同一 Release 的补充资产上传。它只包含 Codex 实现，不包含 `claude/`、完整数据集、构建缓存或 Git 历史。

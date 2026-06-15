@@ -19,3 +19,5 @@
 ## 下载
 
 下载 `cppCNN-Traffic-Sign-Studio-v1.1.0-windows-x64.zip`，完整解压后双击 `run_demo.bat`。SHA-256 文件可用于校验下载完整性。
+
+课程报告协作者可下载 `cppCNN-Codex-Report-Kit-v1.1.0.zip`。该补充资料包只包含 Codex 纯 C++ 实现，提供同一便携程序、完整课程源码、报告材料、代码阅读指南和答辩指南，不包含 Claude/PyTorch 原型或完整数据集。
