@@ -200,3 +200,41 @@ Input (3x32x32)
 3. 验证 43 类数据管线
 4. 完成数据审计报告
 5. 准备开始阶段 A 实现
+
+## 11. 阶段 A 验证结果
+
+> 验证时间：2026-06-15
+
+### 测试套件
+- 16 个测试全部通过（Tensor, CNN, Dropout, LR Scheduler, Augmenter, 混淆矩阵, Track 分割等）
+- 构建：Release, MSVC 19.44, 无警告
+
+### 高级管线验证（2 epoch, LeNet, 43 类）
+| 指标 | 值 |
+| --- | --- |
+| 训练样本 | 31,349（80%, track-based） |
+| 验证样本 | 7,860（20%, track-based） |
+| Epoch 1 val acc | 83.09% |
+| Epoch 2 val acc | 88.32% |
+| 平均类准确率 | 85.16% |
+| 训练耗时 | 801 秒（含完整 39K 图片加载） |
+| CSV 历史 | 正常输出 |
+| Checkpoint | 模型 + 优化器状态 |
+| 续训 | 支持（.opt 文件） |
+
+### 阶段 A 交付物
+| 文件 | 说明 |
+| --- | --- |
+| src/cnn/Augmenter.h/cpp | 数据增强（旋转/平移/缩放/亮度/对比度/噪声） |
+| src/cnn/DropoutLayer.h/cpp | Dropout 层（train/eval 模式切换） |
+| src/cnn/LRScheduler.h/cpp | 学习率调度（StepLR/Cosine/Warmup） |
+| src/cnn/Loss.h/cpp | PerClassAccuracy + ConfusionMatrix |
+| src/cnn/Layer.h | 基类扩展（动量、优化器状态序列化） |
+| src/cnn/ConvLayer.h/cpp | 动量 velocity 缓存 + updateWithMomentum |
+| src/cnn/FCLayer.h/cpp | 动量 velocity 缓存 + updateWithMomentum |
+| src/cnn/CNN.h/cpp | Enhanced 架构 + setTraining + 优化器序列化 |
+| src/data/DataLoader.h/cpp | Track 解析 + splitByTrack |
+| src/cnn/Trainer.h/cpp | 验证集、checkpoint、CSV 历史、类均衡采样 |
+| src/app/App.h/cpp | train-advanced CLI |
+| CMakeLists.txt | 新增源文件 |
+| tests/test_basic.cpp | 16 个测试 |

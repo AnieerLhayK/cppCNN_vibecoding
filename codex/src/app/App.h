@@ -1,6 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include "cnn/CNN.h"
+#include "cnn/Trainer.h"
 
 #include <filesystem>
 #include <string>
@@ -17,6 +18,7 @@ private:
     int runEvaluate(const std::vector<std::string>& arguments);
     int runPredict(const std::vector<std::string>& arguments);
     int runInteractive(const std::vector<std::string>& arguments);
+    int runTrainAdvanced(const std::vector<std::string>& arguments);
 
     static void printUsage();
     static void printResourceStatus();
@@ -35,6 +37,17 @@ private:
     static std::vector<std::string> loadLabels(
         const std::filesystem::path& path,
         std::size_t classCount);
+
+    // Print detailed evaluation results
+    static void printDetailedEvaluation(
+        const TrainingReport& report,
+        const std::vector<PerClassMetrics>& perClass,
+        const Dataset& dataset);
+
+    // Write confusion matrix CSV
+    static void writeConfusionMatrix(
+        const std::string& path,
+        const ConfusionMatrix& cm);
 };
 
 }  // namespace cppcnn

@@ -1,4 +1,4 @@
-#include "cnn/FCLayer.h"
+﻿#include "cnn/FCLayer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -20,6 +20,8 @@ FCLayer::FCLayer(
     biases_.assign(outputSize_, 0.0F);
     weightGradients_.assign(weights_.size(), 0.0F);
     biasGradients_.assign(outputSize_, 0.0F);
+    weightVelocity_.assign(weights_.size(), 0.0F);
+    biasVelocity_.assign(outputSize_, 0.0F);
 
     std::mt19937 generator(seed);
     const float standardDeviation = std::sqrt(2.0F / static_cast<float>(inputSize_));
@@ -88,6 +90,39 @@ void FCLayer::update(
         biases_[index] -= learningRate * biasGradients_[index] * gradientScale;
     }
     zeroGrad();
+}
+
+void FCLayer::updateWithMomentum(
+    const float learningRate,
+    const float gradientScale,
+    const float weightDecay,
+    const float momentum) {
+    for (std::size_t index = 0; index < weights_.size(); ++index) {
+        const float gradient = weightGradients_[index] * gradientScale + weightDecay * weights_[index];
+        weightVelocity_[index] = momentum * weightVelocity_[index] + learningRate * gradient;
+        weights_[index] -= weightVelocity_[index];
+    }
+    for (std::size_t index = 0; index < biases_.size(); ++index) {
+        biasVelocity_[index] = momentum * biasVelocity_[index] + learningRate * biasGradients_[index] * gradientScale;
+        biases_[index] -= biasVelocity_[index];
+    }
+    zeroGrad();
+}
+
+void FCLayer::saveOptimizerState(std::vector<float>& buffer) const {
+    buffer.insert(buffer.end(), weightVelocity_.begin(), weightVelocity_.end());
+    buffer.insert(buffer.end(), biasVelocity_.begin(), biasVelocity_.end());
+}
+
+void FCLayer::loadOptimizerState(const float*& cursor) {
+    std::copy(cursor, cursor + weightVelocity_.size(), weightVelocity_.begin());
+    cursor += weightVelocity_.size();
+    std::copy(cursor, cursor + biasVelocity_.size(), biasVelocity_.begin());
+    cursor += biasVelocity_.size();
+}
+
+std::size_t FCLayer::optimizerStateSize() const noexcept {
+    return weightVelocity_.size() + biasVelocity_.size();
 }
 
 std::string FCLayer::type() const {

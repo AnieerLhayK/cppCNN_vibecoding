@@ -1,4 +1,4 @@
-#include "cnn/ConvLayer.h"
+﻿#include "cnn/ConvLayer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -29,6 +29,8 @@ ConvLayer::ConvLayer(
     biases_.assign(outputChannels_, 0.0F);
     weightGradients_.assign(weightCount, 0.0F);
     biasGradients_.assign(outputChannels_, 0.0F);
+    weightVelocity_.assign(weightCount, 0.0F);
+    biasVelocity_.assign(outputChannels_, 0.0F);
 
     std::mt19937 generator(seed);
     const float standardDeviation = std::sqrt(
@@ -174,6 +176,39 @@ void ConvLayer::update(
         biases_[index] -= learningRate * biasGradients_[index] * gradientScale;
     }
     zeroGrad();
+}
+
+void ConvLayer::updateWithMomentum(
+    const float learningRate,
+    const float gradientScale,
+    const float weightDecay,
+    const float momentum) {
+    for (std::size_t index = 0; index < weights_.size(); ++index) {
+        const float gradient = weightGradients_[index] * gradientScale + weightDecay * weights_[index];
+        weightVelocity_[index] = momentum * weightVelocity_[index] + learningRate * gradient;
+        weights_[index] -= weightVelocity_[index];
+    }
+    for (std::size_t index = 0; index < biases_.size(); ++index) {
+        biasVelocity_[index] = momentum * biasVelocity_[index] + learningRate * biasGradients_[index] * gradientScale;
+        biases_[index] -= biasVelocity_[index];
+    }
+    zeroGrad();
+}
+
+void ConvLayer::saveOptimizerState(std::vector<float>& buffer) const {
+    buffer.insert(buffer.end(), weightVelocity_.begin(), weightVelocity_.end());
+    buffer.insert(buffer.end(), biasVelocity_.begin(), biasVelocity_.end());
+}
+
+void ConvLayer::loadOptimizerState(const float*& cursor) {
+    std::copy(cursor, cursor + weightVelocity_.size(), weightVelocity_.begin());
+    cursor += weightVelocity_.size();
+    std::copy(cursor, cursor + biasVelocity_.size(), biasVelocity_.begin());
+    cursor += biasVelocity_.size();
+}
+
+std::size_t ConvLayer::optimizerStateSize() const noexcept {
+    return weightVelocity_.size() + biasVelocity_.size();
 }
 
 std::string ConvLayer::type() const {

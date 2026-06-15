@@ -1,7 +1,8 @@
-#include "cnn/CNN.h"
+﻿#include "cnn/CNN.h"
 
 #include "cnn/Activation.h"
 #include "cnn/ConvLayer.h"
+#include "cnn/DropoutLayer.h"
 #include "cnn/FCLayer.h"
 #include "cnn/FlattenLayer.h"
 #include "cnn/Loss.h"
@@ -81,25 +82,49 @@ std::uint64_t inspectVector(std::istream& input) {
 
 }  // namespace
 
-CNN::CNN(const std::size_t classCount, const std::uint32_t seed)
-    : classCount_(classCount) {
+CNN::CNN(const std::size_t classCount, const std::uint32_t seed,
+         const CNNArchitecture arch)
+    : classCount_(classCount), arch_(arch) {
     if (classCount == 0) {
         throw std::invalid_argument("CNN class count must be positive.");
     }
 
-    // LeNet-style flow for 3 x 32 x 32 input:
-    // 6 x 28 x 28 -> 6 x 14 x 14 -> 16 x 10 x 10 -> 16 x 5 x 5.
-    layers_.push_back(std::make_unique<ConvLayer>(3, 6, 5, 1, 0, seed));
-    layers_.push_back(std::make_unique<ReLULayer>());
-    layers_.push_back(std::make_unique<MaxPoolingLayer>(2, 2));
-    layers_.push_back(std::make_unique<ConvLayer>(6, 16, 5, 1, 0, seed + 1));
-    layers_.push_back(std::make_unique<ReLULayer>());
-    layers_.push_back(std::make_unique<MaxPoolingLayer>(2, 2));
-    layers_.push_back(std::make_unique<FlattenLayer>());
-    layers_.push_back(std::make_unique<FCLayer>(16 * 5 * 5, 120, seed + 2));
-    layers_.push_back(std::make_unique<ReLULayer>());
-    layers_.push_back(std::make_unique<FCLayer>(120, classCount_, seed + 3));
-    layers_.push_back(std::make_unique<SoftmaxLayer>());
+    if (arch == CNNArchitecture::LeNet) {
+        // Original LeNet-style flow for 3 x 32 x 32 input:
+        // 6 x 28 x 28 -> 6 x 14 x 14 -> 16 x 10 x 10 -> 16 x 5 x 5.
+        layers_.push_back(std::make_unique<ConvLayer>(3, 6, 5, 1, 0, seed));
+        layers_.push_back(std::make_unique<ReLULayer>());
+        layers_.push_back(std::make_unique<MaxPoolingLayer>(2, 2));
+        layers_.push_back(std::make_unique<ConvLayer>(6, 16, 5, 1, 0, seed + 1));
+        layers_.push_back(std::make_unique<ReLULayer>());
+        layers_.push_back(std::make_unique<MaxPoolingLayer>(2, 2));
+        layers_.push_back(std::make_unique<FlattenLayer>());
+        layers_.push_back(std::make_unique<FCLayer>(16 * 5 * 5, 120, seed + 2));
+        layers_.push_back(std::make_unique<ReLULayer>());
+        layers_.push_back(std::make_unique<FCLayer>(120, classCount_, seed + 3));
+        layers_.push_back(std::make_unique<SoftmaxLayer>());
+    } else {
+        // Enhanced architecture: 3 Conv layers with more filters + dropout
+        // Input: 3 x 32 x 32
+        layers_.push_back(std::make_unique<ConvLayer>(3, 32, 5, 1, 2, seed));       // 32 x 32 x 32
+        layers_.push_back(std::make_unique<ReLULayer>());
+        layers_.push_back(std::make_unique<MaxPoolingLayer>(2, 2));                  // 32 x 16 x 16
+        layers_.push_back(std::make_unique<ConvLayer>(32, 64, 3, 1, 1, seed + 1));  // 64 x 16 x 16
+        layers_.push_back(std::make_unique<ReLULayer>());
+        layers_.push_back(std::make_unique<MaxPoolingLayer>(2, 2));                  // 64 x 8 x 8
+        layers_.push_back(std::make_unique<ConvLayer>(64, 128, 3, 1, 1, seed + 2)); // 128 x 8 x 8
+        layers_.push_back(std::make_unique<ReLULayer>());
+        layers_.push_back(std::make_unique<MaxPoolingLayer>(2, 2));                  // 128 x 4 x 4
+        layers_.push_back(std::make_unique<FlattenLayer>());                         // 2048
+        layers_.push_back(std::make_unique<FCLayer>(128 * 4 * 4, 512, seed + 3));
+        layers_.push_back(std::make_unique<ReLULayer>());
+        layers_.push_back(std::make_unique<DropoutLayer>(0.5F, seed + 4));
+        layers_.push_back(std::make_unique<FCLayer>(512, 256, seed + 5));
+        layers_.push_back(std::make_unique<ReLULayer>());
+        layers_.push_back(std::make_unique<DropoutLayer>(0.5F, seed + 6));
+        layers_.push_back(std::make_unique<FCLayer>(256, classCount_, seed + 7));
+        layers_.push_back(std::make_unique<SoftmaxLayer>());
+    }
 }
 
 Tensor CNN::forward(const Tensor& input) {
@@ -137,7 +162,26 @@ void CNN::update(
     }
 }
 
+void CNN::updateWithMomentum(
+    const float learningRate,
+    const float gradientScale,
+    const float weightDecay,
+    const float momentum) {
+    for (const auto& layer : layers_) {
+        layer->updateWithMomentum(learningRate, gradientScale, weightDecay, momentum);
+    }
+}
+
+void CNN::setTraining(const bool enabled) {
+    training_ = enabled;
+    for (const auto& layer : layers_) {
+        layer->train(enabled);
+    }
+}
+
 std::size_t CNN::predict(const Tensor& input, float* confidence) {
+    // Inference mode: disable dropout
+    setTraining(false);
     const Tensor probabilities = forward(input);
     const std::size_t prediction = argmax(probabilities);
     if (confidence != nullptr) {
@@ -161,8 +205,7 @@ void CNN::saveModel(const std::filesystem::path& path) const {
 
     std::uint32_t trainableLayerCount = 0;
     for (const auto& layer : layers_) {
-        if (dynamic_cast<const ConvLayer*>(layer.get()) != nullptr
-            || dynamic_cast<const FCLayer*>(layer.get()) != nullptr) {
+        if (layer->isTrainable()) {
             ++trainableLayerCount;
         }
     }
@@ -201,8 +244,7 @@ void CNN::loadModel(const std::filesystem::path& path) {
 
     std::vector<Layer*> trainableLayers;
     for (const auto& layer : layers_) {
-        if (dynamic_cast<ConvLayer*>(layer.get()) != nullptr
-            || dynamic_cast<FCLayer*>(layer.get()) != nullptr) {
+        if (layer->isTrainable()) {
             trainableLayers.push_back(layer.get());
         }
     }
@@ -255,21 +297,16 @@ ModelInfo CNN::inspectModel(const std::filesystem::path& path) {
         throw std::runtime_error("Model class count is invalid.");
     }
 
-    const std::array<std::uint32_t, 4> expectedTypes = {
-        convolutionType,
-        convolutionType,
-        fullyConnectedType,
-        fullyConnectedType,
-    };
     const auto layerCount = readValue<std::uint32_t>(input);
-    if (layerCount != expectedTypes.size()) {
-        throw std::runtime_error("Model architecture does not match the supported LeNet network.");
+    if (layerCount == 0) {
+        throw std::runtime_error("Model has no trainable layers.");
     }
 
     std::uint64_t parameterCount = 0;
-    for (const auto expectedType : expectedTypes) {
-        if (readValue<std::uint32_t>(input) != expectedType) {
-            throw std::runtime_error("Model layer order does not match the supported network.");
+    for (std::uint32_t i = 0; i < layerCount; ++i) {
+        const auto layerType = readValue<std::uint32_t>(input);
+        if (layerType != convolutionType && layerType != fullyConnectedType) {
+            throw std::runtime_error("Unknown layer type in model file.");
         }
         const auto weightCount = inspectVector(input);
         const auto biasCount = inspectVector(input);
@@ -298,6 +335,19 @@ std::size_t CNN::classCount() const noexcept {
 
 std::size_t CNN::layerCount() const noexcept {
     return layers_.size();
+}
+
+void CNN::saveOptimizerState(std::vector<float>& buffer) const {
+    for (const auto& layer : layers_) {
+        layer->saveOptimizerState(buffer);
+    }
+}
+
+void CNN::loadOptimizerState(const float* buffer) {
+    const float* cursor = buffer;
+    for (const auto& layer : layers_) {
+        layer->loadOptimizerState(cursor);
+    }
 }
 
 }  // namespace cppcnn
