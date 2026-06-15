@@ -23,7 +23,7 @@ private:
     float rate_;          // dropout probability
     float scale_;         // 1.0F / (1.0F - rate_)
     bool training_ = true;
-    std::uint32_t seed_;
+    std::mt19937 generator_;
     std::vector<std::uint8_t> mask_;
     std::size_t lastSize_ = 0;
 };

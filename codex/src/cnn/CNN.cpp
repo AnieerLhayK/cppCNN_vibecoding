@@ -20,7 +20,8 @@ namespace cppcnn {
 namespace {
 
 constexpr std::array<char, 8> modelMagic = {'C', 'P', 'P', 'C', 'N', 'N', '1', '\0'};
-constexpr std::uint32_t modelVersion = 1;
+constexpr std::uint32_t modelVersion = 2;
+constexpr std::uint32_t legacyModelVersion = 1;
 constexpr std::uint32_t convolutionType = 1;
 constexpr std::uint32_t fullyConnectedType = 2;
 
@@ -78,6 +79,17 @@ std::uint64_t inspectVector(std::istream& input) {
         throw std::runtime_error("Model parameter data is truncated.");
     }
     return count;
+}
+
+CNNArchitecture readArchitecture(std::istream& input, const std::uint32_t version) {
+    if (version == legacyModelVersion) {
+        return CNNArchitecture::LeNet;
+    }
+    const auto value = readValue<std::uint32_t>(input);
+    if (value > static_cast<std::uint32_t>(CNNArchitecture::Enhanced)) {
+        throw std::runtime_error("Model architecture is invalid.");
+    }
+    return static_cast<CNNArchitecture>(value);
 }
 
 }  // namespace
@@ -202,6 +214,7 @@ void CNN::saveModel(const std::filesystem::path& path) const {
     output.write(modelMagic.data(), static_cast<std::streamsize>(modelMagic.size()));
     writeValue(output, modelVersion);
     writeValue(output, static_cast<std::uint64_t>(classCount_));
+    writeValue(output, static_cast<std::uint32_t>(arch_));
 
     std::uint32_t trainableLayerCount = 0;
     for (const auto& layer : layers_) {
@@ -235,11 +248,15 @@ void CNN::loadModel(const std::filesystem::path& path) {
     if (!input || magic != modelMagic) {
         throw std::runtime_error("File is not a supported cppCNN model: " + path.string());
     }
-    if (readValue<std::uint32_t>(input) != modelVersion) {
+    const auto version = readValue<std::uint32_t>(input);
+    if (version != legacyModelVersion && version != modelVersion) {
         throw std::runtime_error("Model version is not supported.");
     }
     if (readValue<std::uint64_t>(input) != classCount_) {
         throw std::runtime_error("Model class count does not match the current network.");
+    }
+    if (readArchitecture(input, version) != arch_) {
+        throw std::runtime_error("Model architecture does not match the current network.");
     }
 
     std::vector<Layer*> trainableLayers;
@@ -289,13 +306,14 @@ ModelInfo CNN::inspectModel(const std::filesystem::path& path) {
         throw std::runtime_error("File is not a supported cppCNN model: " + path.string());
     }
     const auto version = readValue<std::uint32_t>(input);
-    if (version != modelVersion) {
+    if (version != legacyModelVersion && version != modelVersion) {
         throw std::runtime_error("Model version is not supported.");
     }
     const auto count = readValue<std::uint64_t>(input);
     if (count == 0) {
         throw std::runtime_error("Model class count is invalid.");
     }
+    const auto architecture = readArchitecture(input, version);
 
     const auto layerCount = readValue<std::uint32_t>(input);
     if (layerCount == 0) {
@@ -326,6 +344,7 @@ ModelInfo CNN::inspectModel(const std::filesystem::path& path) {
     info.classCount = static_cast<std::size_t>(count);
     info.trainableLayerCount = layerCount;
     info.parameterCount = static_cast<std::size_t>(parameterCount);
+    info.architecture = architecture;
     return info;
 }
 
@@ -348,6 +367,14 @@ void CNN::loadOptimizerState(const float* buffer) {
     for (const auto& layer : layers_) {
         layer->loadOptimizerState(cursor);
     }
+}
+
+std::size_t CNN::optimizerStateSize() const noexcept {
+    std::size_t size = 0;
+    for (const auto& layer : layers_) {
+        size += layer->optimizerStateSize();
+    }
+    return size;
 }
 
 }  // namespace cppcnn

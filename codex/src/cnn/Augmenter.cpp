@@ -37,32 +37,31 @@ float sampleChannel(const float* data, std::size_t height, std::size_t width,
 }  // namespace
 
 Augmenter::Augmenter(AugmentConfig config, const std::uint32_t seed)
-    : config_(std::move(config)), seed_(seed) {}
+    : config_(std::move(config)), generator_(seed) {}
 
 Tensor Augmenter::augment(const Tensor& input) {
     if (input.empty()) {
         throw std::invalid_argument("Augmenter input cannot be empty.");
     }
     Tensor result = input;
-    std::mt19937 generator(seed_);
 
     if (config_.enableRotation) {
-        applyRotation(result, generator);
+        applyRotation(result, generator_);
     }
     if (config_.enableTranslation) {
-        applyTranslation(result, generator);
+        applyTranslation(result, generator_);
     }
     if (config_.enableScaling) {
-        applyScaling(result, generator);
+        applyScaling(result, generator_);
     }
     if (config_.enableBrightness) {
-        applyBrightness(result, generator);
+        applyBrightness(result, generator_);
     }
     if (config_.enableContrast) {
-        applyContrast(result, generator);
+        applyContrast(result, generator_);
     }
     if (config_.enableNoise) {
-        applyNoise(result, generator);
+        applyNoise(result, generator_);
     }
 
     // Clamp to [0, 1]

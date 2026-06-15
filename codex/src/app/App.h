@@ -37,17 +37,6 @@ private:
     static std::vector<std::string> loadLabels(
         const std::filesystem::path& path,
         std::size_t classCount);
-
-    // Print detailed evaluation results
-    static void printDetailedEvaluation(
-        const TrainingReport& report,
-        const std::vector<PerClassMetrics>& perClass,
-        const Dataset& dataset);
-
-    // Write confusion matrix CSV
-    static void writeConfusionMatrix(
-        const std::string& path,
-        const ConfusionMatrix& cm);
 };
 
 }  // namespace cppcnn

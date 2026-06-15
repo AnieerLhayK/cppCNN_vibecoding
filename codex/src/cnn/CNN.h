@@ -10,16 +10,17 @@
 
 namespace cppcnn {
 
+enum class CNNArchitecture {
+    LeNet,        // Original: 2xConv(6,16) + 2xFC(120,N)
+    Enhanced,     // Wider/deeper: 3xConv(32,64,128) + 3xFC(512,256,N)
+};
+
 struct ModelInfo {
     std::uint32_t version = 0;
     std::size_t classCount = 0;
     std::size_t trainableLayerCount = 0;
     std::size_t parameterCount = 0;
-};
-
-enum class CNNArchitecture {
-    LeNet,        // Original: 2xConv(6,16) + 2xFC(120,N)
-    Enhanced,     // Wider/deeper: 3xConv(32,64,128) + 3xFC(512,256,N)
+    CNNArchitecture architecture = CNNArchitecture::LeNet;
 };
 
 class CNN {
@@ -51,6 +52,7 @@ public:
     // Optimizer state serialization for resume
     void saveOptimizerState(std::vector<float>& buffer) const;
     void loadOptimizerState(const float* buffer);
+    [[nodiscard]] std::size_t optimizerStateSize() const noexcept;
 
 private:
     std::size_t classCount_;

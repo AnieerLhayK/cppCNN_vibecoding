@@ -48,7 +48,7 @@ private:
     void applyNoise(Tensor& image, std::mt19937& generator);
 
     AugmentConfig config_;
-    std::uint32_t seed_;
+    std::mt19937 generator_;
 };
 
 }  // namespace cppcnn

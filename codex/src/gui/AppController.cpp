@@ -212,7 +212,8 @@ void AppController::applyModel(const QString& path) {
     try {
         const auto nativePath = std::filesystem::path(path.toStdWString());
         const cppcnn::ModelInfo info = cppcnn::CNN::inspectModel(nativePath);
-        auto network = std::make_shared<cppcnn::CNN>(info.classCount);
+        auto network = std::make_shared<cppcnn::CNN>(
+            info.classCount, 42, info.architecture);
         network->loadModel(nativePath);
         const QString labelsPath = ResourceLocator::findLabelsForModel(path);
         const QStringList labels =
@@ -224,9 +225,13 @@ void AppController::applyModel(const QString& path) {
         labelsPath_ = labelsPath;
         labels_ = labels;
         modelStatus_ = QStringLiteral("Model ready");
+        const QString architecture = info.architecture == cppcnn::CNNArchitecture::Enhanced
+            ? QStringLiteral("Enhanced")
+            : QStringLiteral("LeNet");
         modelDetails_ = QStringLiteral(
-            "Format v%1 | LeNet | %2 trainable layers | %3 parameters")
+            "Format v%1 | %2 | %3 trainable layers | %4 parameters")
             .arg(info.version)
+            .arg(architecture)
             .arg(info.trainableLayerCount)
             .arg(info.parameterCount);
         clearPrediction();

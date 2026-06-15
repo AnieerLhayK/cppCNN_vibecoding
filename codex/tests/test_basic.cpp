@@ -13,6 +13,7 @@
 #include "data/DataLoader.h"
 #include "image/ImageProcessor.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
@@ -168,6 +169,10 @@ void testDropoutLayer() {
     expect(sumTrain > 0.0F, "Dropout training output should have some values.");
     expect(zeroCount > 0.0F, "Dropout training should drop some values.");
     expect(zeroCount < static_cast<float>(trainOutput.size()), "Dropout should keep some values.");
+    const auto secondTrainOutput = dropout.forward(input);
+    expect(
+        trainOutput.values() != secondTrainOutput.values(),
+        "Dropout should generate a new mask for each training forward pass.");
 
     // Eval mode: pass through
     dropout.train(false);
@@ -202,6 +207,10 @@ void testAugmenter() {
 
     cppcnn::Augmenter augmenter(config, 42);
     const auto augmented = augmenter.augment(input);
+    const auto secondAugmented = augmenter.augment(input);
+    expect(
+        augmented.values() != secondAugmented.values(),
+        "Augmentation should draw new parameters for each sample.");
 
     expect(augmented.channels() == input.channels(), "Augmented channel count unchanged.");
     expect(augmented.height() == input.height(), "Augmented height unchanged.");
@@ -248,37 +257,45 @@ void testTrackSplit() {
         std::filesystem::temp_directory_path() / "cppcnn_track_split_test";
     std::filesystem::remove_all(root);
     std::filesystem::create_directories(root / "00000");
+    std::filesystem::create_directories(root / "00001");
 
-    // Create 6 test images with 2 tracks (00000 and 00001)
-    for (int track = 0; track < 2; ++track) {
-        for (int frame = 0; frame < 3; ++frame) {
-            const std::string filename = std::to_string(track) + "_0000" + std::to_string(frame) + ".ppm";
-            std::ofstream output(root / "00000" / filename);
-            output << "P3\n2 2\n255\n0 0 0 0 0 0 0 0 0 0 0 0\n";
-            output.close();
+    // Create two tracks per class so both classes can be stratified.
+    for (int classId = 0; classId < 2; ++classId) {
+        const auto classDirectory = root / (classId == 0 ? "00000" : "00001");
+        for (int track = 0; track < 2; ++track) {
+            for (int frame = 0; frame < 3; ++frame) {
+                const std::string filename =
+                    std::to_string(track) + "_0000" + std::to_string(frame) + ".ppm";
+                std::ofstream output(classDirectory / filename);
+                output << "P3\n2 2\n255\n0 0 0 0 0 0 0 0 0 0 0 0\n";
+                output.close();
+            }
         }
     }
 
     cppcnn::DataLoaderOptions options;
-    options.classLimit = 1;
+    options.classLimit = 2;
     cppcnn::DataLoader loader(options);
     const auto dataset = loader.loadDirectory(root);
 
-    expect(dataset.size() == 6, "Track test dataset should have 6 samples.");
-
-    // Check track IDs
-    int track0Count = 0, track1Count = 0;
-    for (const auto& sample : dataset.samples) {
-        if (sample.trackId == 0) ++track0Count;
-        else if (sample.trackId == 1) ++track1Count;
-    }
-    expect(track0Count == 3, "Track 0 should have 3 samples.");
-    expect(track1Count == 3, "Track 1 should have 3 samples.");
+    expect(dataset.size() == 12, "Track test dataset should have 12 samples.");
 
     // Test split
     const auto split = cppcnn::DataLoader::splitByTrack(dataset, 0.5F, 42);
     expect(!split.train.samples.empty(), "Split train should not be empty.");
     expect(!split.validation.samples.empty(), "Split val should not be empty.");
+    for (std::size_t label = 0; label < 2; ++label) {
+        const bool trainHasClass = std::any_of(
+            split.train.samples.begin(),
+            split.train.samples.end(),
+            [label](const cppcnn::DataSample& sample) { return sample.label == label; });
+        const bool validationHasClass = std::any_of(
+            split.validation.samples.begin(),
+            split.validation.samples.end(),
+            [label](const cppcnn::DataSample& sample) { return sample.label == label; });
+        expect(trainHasClass, "Each class should remain in the training split.");
+        expect(validationHasClass, "Each class should appear in the validation split.");
+    }
 
     // Verify no track is in both splits
     for (const auto& trainSample : split.train.samples) {
@@ -386,10 +403,13 @@ void testModelPersistenceAndUpdate() {
     source.saveModel(modelPath);
     expect(cppcnn::CNN::modelClassCount(modelPath) == 3, "Stored model class count is incorrect.");
     const auto modelInfo = cppcnn::CNN::inspectModel(modelPath);
-    expect(modelInfo.version == 1, "Stored model version is incorrect.");
+    expect(modelInfo.version == 2, "Stored model version is incorrect.");
     expect(modelInfo.classCount == 3, "Inspected model class count is incorrect.");
     expect(modelInfo.trainableLayerCount == 4, "Inspected trainable layer count is incorrect.");
     expect(modelInfo.parameterCount > 50000, "Inspected model parameter count is too small.");
+    expect(
+        modelInfo.architecture == cppcnn::CNNArchitecture::LeNet,
+        "Inspected model architecture is incorrect.");
 
     cppcnn::CNN restored(3, 999, cppcnn::CNNArchitecture::LeNet);
     restored.loadModel(modelPath);
@@ -409,6 +429,37 @@ void testModelPersistenceAndUpdate() {
     const float updatedLoss = cppcnn::CrossEntropyLoss::value(afterUpdate, 1);
     expect(std::isfinite(updatedLoss), "Training update produced a non-finite loss.");
     expect(updatedLoss <= initialLoss, "A single training step did not reduce sample loss.");
+
+    std::filesystem::remove(modelPath);
+}
+
+void testEnhancedModelPersistence() {
+    const auto modelPath =
+        std::filesystem::temp_directory_path() / "cppcnn_enhanced_model_test.bin";
+    std::filesystem::remove(modelPath);
+
+    cppcnn::CNN source(4, 31, cppcnn::CNNArchitecture::Enhanced);
+    source.setTraining(false);
+    cppcnn::Tensor input(3, 32, 32, 0.2F);
+    const auto beforeSave = source.forward(input);
+    source.saveModel(modelPath);
+
+    const auto modelInfo = cppcnn::CNN::inspectModel(modelPath);
+    expect(
+        modelInfo.architecture == cppcnn::CNNArchitecture::Enhanced,
+        "Enhanced model architecture was not stored.");
+
+    cppcnn::CNN restored(4, 99, modelInfo.architecture);
+    restored.loadModel(modelPath);
+    restored.setTraining(false);
+    const auto afterLoad = restored.forward(input);
+    for (std::size_t index = 0; index < beforeSave.size(); ++index) {
+        expectNear(
+            afterLoad[index],
+            beforeSave[index],
+            1.0e-6F,
+            "Loaded enhanced model prediction differs from the saved model.");
+    }
 
     std::filesystem::remove(modelPath);
 }
@@ -444,6 +495,7 @@ int main() {
         testDataLoader();
         testOfficialGtsrbLayout();
         testModelPersistenceAndUpdate();
+        testEnhancedModelPersistence();
         testMomentumUpdate();
         std::cout << "All basic tests passed.\n";
         return EXIT_SUCCESS;

@@ -7,7 +7,7 @@
 namespace cppcnn {
 
 DropoutLayer::DropoutLayer(const float rate, const std::uint32_t seed)
-    : rate_(rate), seed_(seed) {
+    : rate_(rate), generator_(seed) {
     if (rate < 0.0F || rate >= 1.0F) {
         throw std::invalid_argument("Dropout rate must be in [0, 1).");
     }
@@ -29,11 +29,10 @@ Tensor DropoutLayer::forward(const Tensor& input) {
     }
 
     mask_.resize(input.size());
-    std::mt19937 generator(seed_);
     std::bernoulli_distribution distribution(1.0F - rate_);
 
     for (std::size_t index = 0; index < input.size(); ++index) {
-        if (distribution(generator)) {
+        if (distribution(generator_)) {
             output[index] = input[index] * scale_;
             mask_[index] = 1;
         } else {

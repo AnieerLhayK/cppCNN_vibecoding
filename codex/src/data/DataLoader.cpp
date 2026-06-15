@@ -244,42 +244,49 @@ TrainValSplit DataLoader::splitByTrack(
     std::map<std::pair<int, int>, std::vector<std::size_t>> trackGroups;
     for (std::size_t index = 0; index < fullDataset.samples.size(); ++index) {
         const auto& sample = fullDataset.samples[index];
-        trackGroups[{sample.originalClassId, sample.trackId}].push_back(index);
+        const int trackId = sample.trackId >= 0
+            ? sample.trackId
+            : -static_cast<int>(index) - 1;
+        trackGroups[{sample.originalClassId, trackId}].push_back(index);
     }
 
-    // Collect all track keys
-    std::vector<std::pair<int, int>> trackKeys;
-    trackKeys.reserve(trackGroups.size());
-    for (const auto& [key, _] : trackGroups) {
-        trackKeys.push_back(key);
-    }
-
-    // Shuffle track keys
-    std::mt19937 generator(seed);
-    std::shuffle(trackKeys.begin(), trackKeys.end(), generator);
-
-    // Split tracks into train/val
     TrainValSplit result;
     result.train.classIds = fullDataset.classIds;
     result.validation.classIds = fullDataset.classIds;
 
-    std::size_t valTarget = static_cast<std::size_t>(fullDataset.samples.size() * validationRatio);
-    std::size_t valCount = 0;
+    // Split tracks independently per class so minority classes remain represented.
+    std::map<int, std::vector<std::pair<int, int>>> tracksByClass;
+    for (const auto& [key, _] : trackGroups) {
+        tracksByClass[key.first].push_back(key);
+    }
 
-    for (const auto& trackKey : trackKeys) {
-        const auto& indices = trackGroups[trackKey];
-        const bool assignToVal = valCount < valTarget;
+    std::mt19937 generator(seed);
+    for (auto& [classId, trackKeys] : tracksByClass) {
+        static_cast<void>(classId);
+        std::shuffle(trackKeys.begin(), trackKeys.end(), generator);
 
-        for (const auto& idx : indices) {
-            if (assignToVal) {
-                result.validation.samples.push_back(fullDataset.samples[idx]);
-            } else {
-                result.train.samples.push_back(fullDataset.samples[idx]);
-            }
+        std::size_t classSampleCount = 0;
+        for (const auto& key : trackKeys) {
+            classSampleCount += trackGroups.at(key).size();
         }
+        const std::size_t valTarget = std::max<std::size_t>(
+            1, static_cast<std::size_t>(classSampleCount * validationRatio));
+        std::size_t valCount = 0;
 
-        if (assignToVal) {
-            valCount += indices.size();
+        for (std::size_t keyIndex = 0; keyIndex < trackKeys.size(); ++keyIndex) {
+            const auto& indices = trackGroups.at(trackKeys[keyIndex]);
+            const bool leaveTrackForTraining = keyIndex + 1 < trackKeys.size();
+            const bool assignToVal = valCount < valTarget && leaveTrackForTraining;
+            for (const auto index : indices) {
+                if (assignToVal) {
+                    result.validation.samples.push_back(fullDataset.samples[index]);
+                } else {
+                    result.train.samples.push_back(fullDataset.samples[index]);
+                }
+            }
+            if (assignToVal) {
+                valCount += indices.size();
+            }
         }
     }
 

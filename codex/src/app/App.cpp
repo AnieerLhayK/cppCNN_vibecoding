@@ -45,10 +45,14 @@ void printPrediction(
 }
 
 CNNArchitecture parseArchitecture(const std::string& name) {
+    if (name == "lenet" || name == "LeNet") {
+        return CNNArchitecture::LeNet;
+    }
     if (name == "enhanced" || name == "Enhanced") {
         return CNNArchitecture::Enhanced;
     }
-    return CNNArchitecture::LeNet;
+    throw std::invalid_argument(
+        "Unknown architecture '" + name + "'; use lenet or enhanced.");
 }
 
 }  // namespace
@@ -77,7 +81,6 @@ int App::run(const int argc, char* argv[]) {
     if (command == "evaluate") {
         return runEvaluate(arguments);
     }
-    if (command == "evaluate-detailed") { throw std::invalid_argument("evaluate-detailed: use evaluate instead."); }
     if (command == "predict") {
         return runPredict(arguments);
     }
@@ -210,7 +213,7 @@ int App::runTrainAdvanced(const std::vector<std::string>& arguments) {
         loader.loadDataset(datasetPath, DatasetSplit::Training);
 
     // Create network with selected architecture
-    CNN network(classCount, static_cast<std::uint32_t>(seed), arch);
+    CNN network(fullDataset.classCount(), static_cast<std::uint32_t>(seed), arch);
 
     TrainingOptions trainOpts;
     trainOpts.epochs = epochs;
@@ -259,7 +262,11 @@ int App::runTrainAdvanced(const std::vector<std::string>& arguments) {
     TrainingReport report = Trainer::train(
         network, fullDataset, loader, trainOpts, &std::cout);
 
-    // Save final model
+    // Publish the best validation checkpoint, not the final overfit epoch.
+    if (report.bestEpoch > 0
+        && std::filesystem::is_regular_file(checkpointPath)) {
+        network.loadModel(checkpointPath);
+    }
     network.saveModel(modelPath);
     std::cout << "\nModel saved to: " << modelPath << '\n';
 
@@ -285,7 +292,8 @@ int App::runEvaluate(const std::vector<std::string>& arguments) {
     requireDataset(arguments[0], "evaluation");
     requireModel(arguments[1]);
 
-    const std::size_t classCount = CNN::modelClassCount(arguments[1]);
+    const ModelInfo modelInfo = CNN::inspectModel(arguments[1]);
+    const std::size_t classCount = modelInfo.classCount;
     const std::size_t samplesPerClass =
         arguments.size() > 2 ? parseSize(arguments[2], "samples_per_class", true) : 0;
 
@@ -296,7 +304,7 @@ int App::runEvaluate(const std::vector<std::string>& arguments) {
     const Dataset testSet =
         loader.loadDataset(arguments[0], DatasetSplit::Test);
 
-    CNN network(classCount);
+    CNN network(classCount, 42, modelInfo.architecture);
     network.loadModel(arguments[1]);
     const EpochMetrics metrics = Trainer::evaluate(network, testSet, loader);
     std::cout
@@ -319,8 +327,9 @@ int App::runPredict(const std::vector<std::string>& arguments) {
     }
     requireModel(arguments[1]);
 
-    const std::size_t classCount = CNN::modelClassCount(arguments[1]);
-    CNN network(classCount);
+    const ModelInfo modelInfo = CNN::inspectModel(arguments[1]);
+    const std::size_t classCount = modelInfo.classCount;
+    CNN network(classCount, 42, modelInfo.architecture);
     network.loadModel(arguments[1]);
     const auto labels = loadLabels(labelPathFrom(arguments, 2), classCount);
     printPrediction(network, arguments[0], labels, true);
@@ -333,8 +342,9 @@ int App::runInteractive(const std::vector<std::string>& arguments) {
     }
     requireModel(arguments[0]);
 
-    const std::size_t classCount = CNN::modelClassCount(arguments[0]);
-    CNN network(classCount);
+    const ModelInfo modelInfo = CNN::inspectModel(arguments[0]);
+    const std::size_t classCount = modelInfo.classCount;
+    CNN network(classCount, 42, modelInfo.architecture);
     network.loadModel(arguments[0]);
     const auto labels = loadLabels(labelPathFrom(arguments, 1), classCount);
 

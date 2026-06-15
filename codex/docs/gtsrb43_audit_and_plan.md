@@ -2,7 +2,7 @@
 
 > 生成日期：2026-06-15  
 > 仓库：cppCNN_vibecoding  
-> 分支：`feat/gtsrb43-training`
+> 分支：`claude_release`
 
 ---
 
@@ -10,7 +10,7 @@
 
 | 项 | 状态 |
 | --- | --- |
-| Git 分支 | feat/gtsrb43-training（独立开发分支） |
+| Git 分支 | claude_release（阶段 A/B/C/D 开发分支） |
 | 编译工具链 | MSVC 19.44 + Visual Studio 17 2022 x64 |
 | CMake | 3.20+ |
 | 构建目录 | D:\AI\data\codex\cache\staging\cppcnn-training-build |
@@ -206,7 +206,7 @@ Input (3x32x32)
 > 验证时间：2026-06-15
 
 ### 测试套件
-- 16 个测试全部通过（Tensor, CNN, Dropout, LR Scheduler, Augmenter, 混淆矩阵, Track 分割等）
+- 核心与 GUI 测试全部通过（Tensor, CNN, Dropout, LR Scheduler, Augmenter, 混淆矩阵, Track 分割等）
 - 构建：Release, MSVC 19.44, 无警告
 
 ### 高级管线验证（2 epoch, LeNet, 43 类）

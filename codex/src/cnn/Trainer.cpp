@@ -117,7 +117,6 @@ TrainingReport Trainer::train(
     Augmenter augmenter(AugmentConfig{}, options.seed);
 
     // Validation set (track-based split)
-    Dataset* trainPtr = const_cast<Dataset*>(&trainingSet);
     Dataset validationSet;
     TrainValSplit split;
     bool hasValidation = options.validationRatio > 0.0F;
@@ -166,6 +165,7 @@ TrainingReport Trainer::train(
         if (loadCheckpoint(const_cast<CNN&>(network), options.checkpointPath,
                            savedEpoch, bestValAccuracy, savedOpts)) {
             startEpoch = savedEpoch + 1;
+            report.bestEpoch = savedEpoch;
             if (progress) {
                 *progress << "Resumed from epoch " << savedEpoch
                          << " (best val acc: " << std::fixed << std::setprecision(2)
@@ -186,11 +186,11 @@ TrainingReport Trainer::train(
     std::size_t earlyStopCounter = 0;
 
     for (std::size_t epoch = startEpoch; epoch <= options.epochs; ++epoch) {
-        currentLR = scheduler.getLR(epoch);
+        currentLR = scheduler.getLR(epoch - 1);
         const auto epochStart = std::chrono::steady_clock::now();
 
         // Build training order
-        const Dataset& currentTrainingSet = hasValidation ? split.train : *trainPtr;
+        const Dataset& currentTrainingSet = hasValidation ? split.train : trainingSet;
 
         if (options.enableClassBalancing) {
             order = buildBalancedOrder(currentTrainingSet, options.seed + static_cast<std::uint32_t>(epoch));
@@ -202,17 +202,10 @@ TrainingReport Trainer::train(
             }
         }
 
-        // Set network to training mode (affects dropout)
-        for (std::size_t i = 0; i < network.layerCount(); ++i) {
-            // We'll call network.setTraining(true) through the CNN
-        }
-        // Actually we need to set training mode on each layer. Let me think about this.
-        // For now, dropout is handled during forward in DropoutLayer itself.
-
+        network.setTraining(true);
         network.zeroGrad();
         float totalLoss = 0.0F;
         Accuracy accuracy;
-        ConfusionMatrix confusion(currentTrainingSet.classCount());
         std::size_t currentBatchSize = 0;
 
         for (std::size_t position = 0; position < order.size(); ++position) {
@@ -228,7 +221,6 @@ TrainingReport Trainer::train(
 
             totalLoss += CrossEntropyLoss::value(probabilities, sample.label);
             accuracy.add(probabilities, sample.label);
-            confusion.add(argmax(probabilities), sample.label);
             network.backward(CrossEntropyLoss::gradient(probabilities, sample.label));
             ++currentBatchSize;
 
@@ -287,15 +279,16 @@ TrainingReport Trainer::train(
             }
 
             // Update best validation accuracy and save checkpoint
-            if (metrics.validationAccuracy > bestValAccuracy) {
+            if (report.bestEpoch == 0
+                || metrics.validationAccuracy > bestValAccuracy) {
                 bestValAccuracy = metrics.validationAccuracy;
                 report.bestEpoch = epoch;
                 earlyStopCounter = 0;
 
                 // Save best checkpoint
                 if (!options.checkpointPath.empty() && options.saveBestOnly) {
-                    saveCheckpoint(network, options.checkpointPath, epoch,
-                                   bestValAccuracy, const_cast<TrainingOptions&>(options));
+                    saveCheckpoint(
+                        network, options.checkpointPath, epoch, bestValAccuracy, options);
                 }
             } else {
                 ++earlyStopCounter;
@@ -320,8 +313,7 @@ TrainingReport Trainer::train(
             // Save periodic checkpoint (not best-only)
             if (!options.checkpointPath.empty() && !options.saveBestOnly) {
                 if (epoch % 5 == 0 || epoch == options.epochs) {
-                    saveCheckpoint(network, options.checkpointPath, epoch,
-                                   0.0F, const_cast<TrainingOptions&>(options));
+                    saveCheckpoint(network, options.checkpointPath, epoch, 0.0F, options);
                 }
             }
         }
@@ -373,6 +365,8 @@ EpochMetrics Trainer::evaluate(
     const DataLoader& loader,
     const std::size_t sampleLimit) {
     validateDataset(network, dataset);
+    const bool wasTraining = network.isTraining();
+    network.setTraining(false);
     const std::size_t count =
         sampleLimit == 0 ? dataset.size() : std::min(sampleLimit, dataset.size());
 
@@ -389,6 +383,7 @@ EpochMetrics Trainer::evaluate(
     metrics.samples = count;
     metrics.averageLoss = totalLoss / static_cast<float>(count);
     metrics.accuracy = accuracy.value();
+    network.setTraining(wasTraining);
     return metrics;
 }
 
@@ -400,6 +395,8 @@ EpochMetrics Trainer::evaluateDetailed(
     ConfusionMatrix& confusion,
     const std::size_t sampleLimit) {
     validateDataset(network, dataset);
+    const bool wasTraining = network.isTraining();
+    network.setTraining(false);
     const std::size_t count =
         sampleLimit == 0 ? dataset.size() : std::min(sampleLimit, dataset.size());
 
@@ -440,6 +437,7 @@ EpochMetrics Trainer::evaluateDetailed(
     metrics.samples = count;
     metrics.averageLoss = totalLoss / static_cast<float>(count);
     metrics.accuracy = accuracy.value();
+    network.setTraining(wasTraining);
     return metrics;
 }
 
@@ -507,12 +505,21 @@ bool Trainer::loadCheckpoint(
 
     std::uint64_t stateSize = 0;
     extra.read(reinterpret_cast<char*>(&stateSize), sizeof(stateSize));
+    if (!extra || stateSize != network.optimizerStateSize()) {
+        return false;
+    }
 
     std::vector<float> optBuffer(stateSize);
     extra.read(reinterpret_cast<char*>(optBuffer.data()),
                static_cast<std::streamsize>(stateSize * sizeof(float)));
+    if (!extra) {
+        return false;
+    }
 
     network.loadOptimizerState(optBuffer.data());
+    options.useMomentum = (optFlags & 1ULL) != 0;
+    options.enableAugmentation = (optFlags & 2ULL) != 0;
+    options.enableClassBalancing = (optFlags & 4ULL) != 0;
 
     return true;
 }
