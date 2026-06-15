@@ -19,11 +19,14 @@ find_package(OpenCV QUIET COMPONENTS core imgcodecs imgproc highgui)
 
 add_library(cppcnn_core
     src/cnn/Activation.cpp
+    src/cnn/Augmenter.cpp
     src/cnn/CNN.cpp
     src/cnn/ConvLayer.cpp
+    src/cnn/DropoutLayer.cpp
     src/cnn/FCLayer.cpp
     src/cnn/FlattenLayer.cpp
     src/cnn/Loss.cpp
+    src/cnn/LRScheduler.cpp
     src/cnn/PoolingLayer.cpp
     src/cnn/Tensor.cpp
     src/cnn/Trainer.cpp

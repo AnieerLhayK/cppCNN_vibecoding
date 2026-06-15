@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "cnn/Layer.h"
 
@@ -22,8 +22,18 @@ public:
     Tensor backward(const Tensor& outputGradient) override;
     void zeroGrad() override;
     void update(float learningRate, float gradientScale, float weightDecay) override;
+    void updateWithMomentum(
+        float learningRate, float gradientScale,
+        float weightDecay, float momentum) override;
 
     [[nodiscard]] std::string type() const override;
+    [[nodiscard]] bool isTrainable() const noexcept override { return true; }
+
+    // Optimizer state for resume
+    void saveOptimizerState(std::vector<float>& buffer) const override;
+    void loadOptimizerState(const float*& cursor) override;
+    [[nodiscard]] std::size_t optimizerStateSize() const noexcept override;
+
     [[nodiscard]] const std::vector<float>& weights() const noexcept;
     [[nodiscard]] const std::vector<float>& biases() const noexcept;
     [[nodiscard]] std::vector<float>& mutableWeights() noexcept;
@@ -45,6 +55,9 @@ private:
     std::vector<float> biases_;
     std::vector<float> weightGradients_;
     std::vector<float> biasGradients_;
+    // Momentum velocity buffers
+    std::vector<float> weightVelocity_;
+    std::vector<float> biasVelocity_;
     Tensor cachedInput_;
 };
 

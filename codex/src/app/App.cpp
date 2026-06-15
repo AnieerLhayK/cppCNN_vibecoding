@@ -1,4 +1,4 @@
-#include "app/App.h"
+﻿#include "app/App.h"
 
 #include "cnn/Trainer.h"
 #include "data/DataLoader.h"
@@ -9,7 +9,9 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
+#include <string>
 
 namespace cppcnn {
 
@@ -42,6 +44,17 @@ void printPrediction(
     }
 }
 
+CNNArchitecture parseArchitecture(const std::string& name) {
+    if (name == "lenet" || name == "LeNet") {
+        return CNNArchitecture::LeNet;
+    }
+    if (name == "enhanced" || name == "Enhanced") {
+        return CNNArchitecture::Enhanced;
+    }
+    throw std::invalid_argument(
+        "Unknown architecture '" + name + "'; use lenet or enhanced.");
+}
+
 }  // namespace
 
 int App::run(const int argc, char* argv[]) {
@@ -61,6 +74,9 @@ int App::run(const int argc, char* argv[]) {
     const std::string command = argv[1];
     if (command == "train") {
         return runTrain(arguments);
+    }
+    if (command == "train-advanced") {
+        return runTrainAdvanced(arguments);
     }
     if (command == "evaluate") {
         return runEvaluate(arguments);
@@ -135,6 +151,139 @@ int App::runTrain(const std::vector<std::string>& arguments) {
     return 0;
 }
 
+// Parse named arguments: --key value
+std::string getArg(const std::vector<std::string>& args, const std::string& key, const std::string& defaultVal) {
+    for (std::size_t i = 0; i + 1 < args.size(); ++i) {
+        if (args[i] == key) {
+            return args[i + 1];
+        }
+    }
+    return defaultVal;
+}
+
+bool hasFlag(const std::vector<std::string>& args, const std::string& key) {
+    return std::find(args.begin(), args.end(), key) != args.end();
+}
+
+int App::runTrainAdvanced(const std::vector<std::string>& arguments) {
+    if (arguments.empty()) {
+        throw std::invalid_argument(
+            "train-advanced requires --dataset <path> --model <path> [options]\n"
+            "Options: --classes N --arch lenet|enhanced --epochs N --batch N\n"
+            "  --lr F --wd F --momentum F --seed N --val F --aug --balance\n"
+            "  --checkpoint path --resume --patience N --csv path\n"
+            "  --lr-decay F --lr-step N --warmup N");
+    }
+
+    const std::string datasetPath = getArg(arguments, "--dataset", "");
+    const std::string modelPath = getArg(arguments, "--model", "");
+    if (datasetPath.empty() || modelPath.empty()) {
+        throw std::invalid_argument("--dataset and --model are required.");
+    }
+    requireDataset(datasetPath, "training");
+
+    const std::size_t classCount = parseSize(getArg(arguments, "--classes", "43"), "classes");
+    const std::string archName = getArg(arguments, "--arch", "lenet");
+    const std::size_t epochs = parseSize(getArg(arguments, "--epochs", "10"), "epochs");
+    const std::size_t batchSize = parseSize(getArg(arguments, "--batch", "64"), "batch");
+    const float learningRate = parseFloat(getArg(arguments, "--lr", "0.01"), "lr");
+    const float weightDecay = parseFloat(getArg(arguments, "--wd", "0.0001"), "wd", true);
+    const float momentum = parseFloat(getArg(arguments, "--momentum", "0.9"), "momentum", true);
+    const std::size_t seed = parseSize(getArg(arguments, "--seed", "42"), "seed", true);
+    const float valRatio = parseFloat(getArg(arguments, "--val", "0.2"), "val", true);
+    const std::size_t patience = parseSize(getArg(arguments, "--patience", "10"), "patience", true);
+    const float lrDecay = parseFloat(getArg(arguments, "--lr-decay", "0.1"), "lr-decay");
+    const std::size_t lrStep = parseSize(getArg(arguments, "--lr-step", "30"), "lr-step");
+    const std::size_t warmup = parseSize(getArg(arguments, "--warmup", "0"), "warmup", true);
+
+    const bool useAug = hasFlag(arguments, "--aug");
+    const bool useBalance = hasFlag(arguments, "--balance");
+    const bool resume = hasFlag(arguments, "--resume");
+
+    const std::string checkpointPath = getArg(arguments, "--checkpoint", modelPath);
+    const std::string csvPath = getArg(arguments, "--csv", "");
+
+    const CNNArchitecture arch = parseArchitecture(archName);
+
+    DataLoaderOptions loaderOptions;
+    loaderOptions.classLimit = classCount;
+    loaderOptions.shuffle = true;
+    DataLoader loader(loaderOptions);
+    const Dataset fullDataset =
+        loader.loadDataset(datasetPath, DatasetSplit::Training);
+
+    // Create network with selected architecture
+    CNN network(fullDataset.classCount(), static_cast<std::uint32_t>(seed), arch);
+
+    TrainingOptions trainOpts;
+    trainOpts.epochs = epochs;
+    trainOpts.batchSize = batchSize;
+    trainOpts.learningRate = learningRate;
+    trainOpts.weightDecay = weightDecay;
+    trainOpts.momentum = momentum;
+    trainOpts.useMomentum = momentum > 0.0F;
+    trainOpts.enableAugmentation = useAug;
+    trainOpts.enableClassBalancing = useBalance;
+    trainOpts.validationRatio = valRatio;
+    trainOpts.useTrackSplit = true;
+    trainOpts.earlyStoppingPatience = patience;
+    trainOpts.checkpointPath = checkpointPath;
+    trainOpts.saveBestOnly = true;
+    trainOpts.resume = resume;
+    trainOpts.logCsvHistory = !csvPath.empty();
+    trainOpts.csvHistoryPath = csvPath;
+    trainOpts.seed = static_cast<std::uint32_t>(seed);
+
+    // LR scheduler config
+    trainOpts.lrScheduler.type = lrDecay < 1.0F ? LRScheduler::Type::Step : LRScheduler::Type::None;
+    trainOpts.lrScheduler.initialLR = learningRate;
+    trainOpts.lrScheduler.decayFactor = lrDecay;
+    trainOpts.lrScheduler.stepSize = lrStep;
+    trainOpts.lrScheduler.warmupEpochs = warmup;
+    trainOpts.lrScheduler.minLR = 1.0e-6F;
+
+    std::cout
+        << "=== Advanced Training ===\n"
+        << "Architecture: " << (arch == CNNArchitecture::Enhanced ? "Enhanced" : "LeNet") << '\n'
+        << "Training samples: " << fullDataset.size() << '\n'
+        << "Classes: " << fullDataset.classCount() << '\n'
+        << "Epochs: " << trainOpts.epochs << '\n'
+        << "Batch size: " << trainOpts.batchSize << '\n'
+        << "Learning rate: " << trainOpts.learningRate << '\n'
+        << "Momentum: " << trainOpts.momentum << '\n'
+        << "Weight decay: " << trainOpts.weightDecay << '\n'
+        << "Validation ratio: " << trainOpts.validationRatio << '\n'
+        << "Data augmentation: " << (trainOpts.enableAugmentation ? "yes" : "no") << '\n'
+        << "Class balancing: " << (trainOpts.enableClassBalancing ? "yes" : "no") << '\n'
+        << "Early stopping patience: " << trainOpts.earlyStoppingPatience << '\n'
+        << "Checkpoint: " << checkpointPath << '\n'
+        << "Seed: " << trainOpts.seed << '\n';
+
+    TrainingReport report = Trainer::train(
+        network, fullDataset, loader, trainOpts, &std::cout);
+
+    // Publish the best validation checkpoint, not the final overfit epoch.
+    if (report.bestEpoch > 0
+        && std::filesystem::is_regular_file(checkpointPath)) {
+        network.loadModel(checkpointPath);
+    }
+    network.saveModel(modelPath);
+    std::cout << "\nModel saved to: " << modelPath << '\n';
+
+    // Print summary
+    std::cout << "\n=== Training Summary ===\n"
+              << "Total duration: " << std::fixed << std::setprecision(1)
+              << report.totalDurationSeconds << "s\n"
+              << "Best val accuracy: " << std::setprecision(2)
+              << report.bestValidationAccuracy * 100.0F << "% (epoch " << report.bestEpoch << ")\n"
+              << "Best model checkpoint: " << checkpointPath << '\n';
+    if (report.earlyStopped) {
+        std::cout << "Early stopped at epoch " << report.earlyStopEpoch << '\n';
+    }
+
+    return 0;
+}
+
 int App::runEvaluate(const std::vector<std::string>& arguments) {
     if (arguments.size() < 2) {
         throw std::invalid_argument(
@@ -143,7 +292,8 @@ int App::runEvaluate(const std::vector<std::string>& arguments) {
     requireDataset(arguments[0], "evaluation");
     requireModel(arguments[1]);
 
-    const std::size_t classCount = CNN::modelClassCount(arguments[1]);
+    const ModelInfo modelInfo = CNN::inspectModel(arguments[1]);
+    const std::size_t classCount = modelInfo.classCount;
     const std::size_t samplesPerClass =
         arguments.size() > 2 ? parseSize(arguments[2], "samples_per_class", true) : 0;
 
@@ -154,7 +304,7 @@ int App::runEvaluate(const std::vector<std::string>& arguments) {
     const Dataset testSet =
         loader.loadDataset(arguments[0], DatasetSplit::Test);
 
-    CNN network(classCount);
+    CNN network(classCount, 42, modelInfo.architecture);
     network.loadModel(arguments[1]);
     const EpochMetrics metrics = Trainer::evaluate(network, testSet, loader);
     std::cout
@@ -177,8 +327,9 @@ int App::runPredict(const std::vector<std::string>& arguments) {
     }
     requireModel(arguments[1]);
 
-    const std::size_t classCount = CNN::modelClassCount(arguments[1]);
-    CNN network(classCount);
+    const ModelInfo modelInfo = CNN::inspectModel(arguments[1]);
+    const std::size_t classCount = modelInfo.classCount;
+    CNN network(classCount, 42, modelInfo.architecture);
     network.loadModel(arguments[1]);
     const auto labels = loadLabels(labelPathFrom(arguments, 2), classCount);
     printPrediction(network, arguments[0], labels, true);
@@ -191,8 +342,9 @@ int App::runInteractive(const std::vector<std::string>& arguments) {
     }
     requireModel(arguments[0]);
 
-    const std::size_t classCount = CNN::modelClassCount(arguments[0]);
-    CNN network(classCount);
+    const ModelInfo modelInfo = CNN::inspectModel(arguments[0]);
+    const std::size_t classCount = modelInfo.classCount;
+    CNN network(classCount, 42, modelInfo.architecture);
     network.loadModel(arguments[0]);
     const auto labels = loadLabels(labelPathFrom(arguments, 1), classCount);
 
@@ -222,6 +374,11 @@ void App::printUsage() {
         << "  cppcnn_app train <train_dir> <model> [class_count=10]"
            " [epochs=5] [samples_per_class=0] [batch_size=16]"
            " [learning_rate=0.01] [weight_decay=0.0001] [seed=42]\n"
+        << "  cppcnn_app train-advanced --dataset <dir> --model <path> [options]\n"
+        << "    Options: --classes N --arch lenet|enhanced --epochs N --batch N\n"
+        << "             --lr F --wd F --momentum F --seed N --val F\n"
+        << "             --aug --balance --checkpoint path --resume\n"
+        << "             --patience N --csv path --lr-decay F --lr-step N --warmup N\n"
         << "  cppcnn_app evaluate <test_dir> <model> [samples_per_class=0]\n"
         << "  cppcnn_app predict <image> <model> [labels_file]\n"
         << "  cppcnn_app interactive <model> [labels_file]\n"
@@ -336,3 +493,4 @@ std::vector<std::string> App::loadLabels(
 }
 
 }  // namespace cppcnn
+

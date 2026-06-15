@@ -91,7 +91,8 @@ void testModelAndPrediction(AppController& controller, const QString& sourceDire
     expect(controller.imageLoaded(), "The GUI could not load the PPM demo image.");
 
     const auto nativeModel = std::filesystem::path(modelPath.toStdWString());
-    cppcnn::CNN network(cppcnn::CNN::modelClassCount(nativeModel));
+    const auto modelInfo = cppcnn::CNN::inspectModel(nativeModel);
+    cppcnn::CNN network(modelInfo.classCount, 42, modelInfo.architecture);
     network.loadModel(nativeModel);
     const auto input = cppcnn::ImageProcessor::loadAndPreprocess(
         std::filesystem::path(demoPath.toStdWString()));

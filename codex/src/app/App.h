@@ -1,6 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include "cnn/CNN.h"
+#include "cnn/Trainer.h"
 
 #include <filesystem>
 #include <string>
@@ -17,6 +18,7 @@ private:
     int runEvaluate(const std::vector<std::string>& arguments);
     int runPredict(const std::vector<std::string>& arguments);
     int runInteractive(const std::vector<std::string>& arguments);
+    int runTrainAdvanced(const std::vector<std::string>& arguments);
 
     static void printUsage();
     static void printResourceStatus();

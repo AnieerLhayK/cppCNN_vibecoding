@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "cnn/Tensor.h"
 
@@ -13,6 +13,7 @@ struct DataSample {
     std::filesystem::path imagePath;
     std::size_t label = 0;
     int originalClassId = 0;
+    int trackId = 0;  // GTSRB track ID from filename XXXXX_YYYYY.ppm
 };
 
 struct Dataset {
@@ -22,6 +23,12 @@ struct Dataset {
     [[nodiscard]] bool empty() const noexcept;
     [[nodiscard]] std::size_t size() const noexcept;
     [[nodiscard]] std::size_t classCount() const noexcept;
+};
+
+// Track-aware validation split
+struct TrainValSplit {
+    Dataset train;
+    Dataset validation;
 };
 
 struct DataLoaderOptions {
@@ -48,6 +55,12 @@ public:
     Dataset loadDirectory(const std::filesystem::path& splitDirectory) const;
     Tensor loadTensor(const DataSample& sample) const;
 
+    // Track-aware split: split by track ID (no consecutive frames cross split)
+    static TrainValSplit splitByTrack(
+        const Dataset& fullDataset,
+        float validationRatio = 0.2F,
+        std::uint32_t seed = 42);
+
     [[nodiscard]] const DataLoaderOptions& options() const noexcept;
 
 private:
@@ -61,6 +74,7 @@ private:
         const std::filesystem::path& directory);
     [[nodiscard]] static bool isSupportedImage(const std::filesystem::path& path);
     [[nodiscard]] static int parseClassId(const std::filesystem::path& directory);
+    static int parseTrackId(const std::filesystem::path& imagePath);
 
     DataLoaderOptions options_;
 };

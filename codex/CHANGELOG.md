@@ -5,6 +5,9 @@
 ## Unreleased
 
 - 新增仅含 Codex 实现的课程报告资料包指南与可重复打包脚本。
+- 新增完整 43 类高级训练管线与 LeNet/Enhanced 架构选择。
+- 新增 Momentum SGD、动态增强、分层 track 验证集、学习率调度和最佳 checkpoint。
+- 模型格式升级至 v2 以记录网络架构，同时兼容既有 v1 LeNet 权重。
 
 ## 1.1.0 - 2026-06-13
 

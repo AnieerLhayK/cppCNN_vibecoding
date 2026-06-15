@@ -1,4 +1,4 @@
-#include "data/DataLoader.h"
+﻿#include "data/DataLoader.h"
 
 #include "image/ImageProcessor.h"
 
@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <string>
 #include <system_error>
+#include <unordered_map>
 #include <utility>
 
 namespace cppcnn {
@@ -76,7 +77,7 @@ Dataset DataLoader::loadDirectory(
         try {
             classDirectories.emplace_back(parseClassId(entry.path()), entry.path());
         } catch (const std::invalid_argument&) {
-            // Files such as README directories are ignored; at least one numeric class is required.
+            // Ignore non-numeric directories
         }
     }
 
@@ -110,7 +111,12 @@ Dataset DataLoader::loadDirectory(
             imagePaths.resize(options_.samplesPerClass);
         }
         for (const auto& imagePath : imagePaths) {
-            dataset.samples.push_back({imagePath, label, classId});
+            DataSample sample;
+            sample.imagePath = imagePath;
+            sample.label = label;
+            sample.originalClassId = classId;
+            sample.trackId = parseTrackId(imagePath);
+            dataset.samples.push_back(std::move(sample));
         }
     }
 
@@ -205,7 +211,12 @@ Dataset DataLoader::loadOfficialTestSet(
             throw std::runtime_error(
                 "GTSRB test image listed by CSV is missing: " + imagePath.string());
         }
-        dataset.samples.push_back({imagePath, label->second, classId});
+        DataSample sample;
+        sample.imagePath = imagePath;
+        sample.label = label->second;
+        sample.originalClassId = classId;
+        sample.trackId = parseTrackId(imagePath);
+        dataset.samples.push_back(std::move(sample));
         ++classCounts[classId];
     }
     if (dataset.samples.empty()) {
@@ -216,6 +227,75 @@ Dataset DataLoader::loadOfficialTestSet(
         std::shuffle(dataset.samples.begin(), dataset.samples.end(), generator);
     }
     return dataset;
+}
+
+TrainValSplit DataLoader::splitByTrack(
+    const Dataset& fullDataset,
+    const float validationRatio,
+    const std::uint32_t seed) {
+    if (fullDataset.empty()) {
+        throw std::invalid_argument("Cannot split an empty dataset.");
+    }
+    if (validationRatio <= 0.0F || validationRatio >= 1.0F) {
+        throw std::invalid_argument("Validation ratio must be in (0, 1).");
+    }
+
+    // Group samples by (classId, trackId)
+    std::map<std::pair<int, int>, std::vector<std::size_t>> trackGroups;
+    for (std::size_t index = 0; index < fullDataset.samples.size(); ++index) {
+        const auto& sample = fullDataset.samples[index];
+        const int trackId = sample.trackId >= 0
+            ? sample.trackId
+            : -static_cast<int>(index) - 1;
+        trackGroups[{sample.originalClassId, trackId}].push_back(index);
+    }
+
+    TrainValSplit result;
+    result.train.classIds = fullDataset.classIds;
+    result.validation.classIds = fullDataset.classIds;
+
+    // Split tracks independently per class so minority classes remain represented.
+    std::map<int, std::vector<std::pair<int, int>>> tracksByClass;
+    for (const auto& [key, _] : trackGroups) {
+        tracksByClass[key.first].push_back(key);
+    }
+
+    std::mt19937 generator(seed);
+    for (auto& [classId, trackKeys] : tracksByClass) {
+        static_cast<void>(classId);
+        std::shuffle(trackKeys.begin(), trackKeys.end(), generator);
+
+        std::size_t classSampleCount = 0;
+        for (const auto& key : trackKeys) {
+            classSampleCount += trackGroups.at(key).size();
+        }
+        const std::size_t valTarget = std::max<std::size_t>(
+            1, static_cast<std::size_t>(classSampleCount * validationRatio));
+        std::size_t valCount = 0;
+
+        for (std::size_t keyIndex = 0; keyIndex < trackKeys.size(); ++keyIndex) {
+            const auto& indices = trackGroups.at(trackKeys[keyIndex]);
+            const bool leaveTrackForTraining = keyIndex + 1 < trackKeys.size();
+            const bool assignToVal = valCount < valTarget && leaveTrackForTraining;
+            for (const auto index : indices) {
+                if (assignToVal) {
+                    result.validation.samples.push_back(fullDataset.samples[index]);
+                } else {
+                    result.train.samples.push_back(fullDataset.samples[index]);
+                }
+            }
+            if (assignToVal) {
+                valCount += indices.size();
+            }
+        }
+    }
+
+    // Ensure no empty split
+    if (result.train.samples.empty() || result.validation.samples.empty()) {
+        throw std::runtime_error("Track-based split produced an empty set. Adjust ratio.");
+    }
+
+    return result;
 }
 
 Tensor DataLoader::loadTensor(const DataSample& sample) const {
@@ -300,6 +380,22 @@ int DataLoader::parseClassId(const std::filesystem::path& directory) {
         throw std::invalid_argument("Class directory name is not a non-negative integer.");
     }
     return classId;
+}
+
+int DataLoader::parseTrackId(const std::filesystem::path& imagePath) {
+    // GTSRB filename: XXXXX_YYYYY.ext -> XXXXX is track ID
+    const std::string stem = imagePath.stem().string();
+    const auto underscore = stem.find('_');
+    if (underscore == std::string::npos || underscore == 0) {
+        return -1;  // No track information
+    }
+    int trackId = 0;
+    const auto result = std::from_chars(
+        stem.data(), stem.data() + underscore, trackId);
+    if (result.ec != std::errc()) {
+        return -1;
+    }
+    return trackId;
 }
 
 }  // namespace cppcnn
