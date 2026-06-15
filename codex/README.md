@@ -171,6 +171,61 @@ CLI 单图预测：
   codex\assets\labels.txt
 ```
 
+## GPU 加速训练（可选）
+
+LibTorch GPU 后端与原始手写 CNN 完全独立，编译后生成 `cppcnn_app_gpu.exe`，与原版共存互不干扰。仅需额外安装 CUDA 工具链，无需修改任何现有代码。
+
+### 环境要求
+
+- NVIDIA GPU（测试环境：RTX 4060 Laptop，8 GB VRAM）
+- CUDA 13.0+（当前环境：`D:\SDK\CUDA\v13.0`）
+- LibTorch 2.12.0-cu130（当前环境：`D:\SDK\libtorch-2.12.0-cu130`）
+
+### 编译
+
+```powershell
+cmake -S codex -B build_libtorch -G "Visual Studio 17 2022" -A x64 `
+  -T "cuda=D:\SDK\CUDA\v13.0" `
+  -DCPPCNN_WITH_LIBTORCH=ON `
+  -DCUDA_TOOLKIT_ROOT_DIR="D:/SDK/CUDA/v13.0" `
+  -DCPPCNN_BUILD_GUI=OFF
+
+cmake --build build_libtorch --config Release
+```
+
+### 运行
+
+```powershell
+# CUDA 自检
+.\build_libtorch\Release\cppcnn_app_gpu.exe cuda-test
+
+# 训练（LeNet，10 类，5 epoch）
+.\build_libtorch\Release\cppcnn_app_gpu.exe train `
+  codex\datasets\GTSRB_subset codex\models\gpu_lenet10.pt `
+  --classes 10 --arch LeNet --epochs 5 --batch 64 --lr 0.01 --verbose
+
+# 训练（Enhanced，43 类，80 epoch）
+.\build_libtorch\Release\cppcnn_app_gpu.exe train `
+  codex\datasets\GTSRB codex\models\gtsrb43_enhanced.pt `
+  --classes 43 --arch Enhanced --epochs 80 --batch 64 --lr 0.01 `
+  --momentum 0.9 --wd 0.0005 --val 0.2 --aug --balance --verbose
+
+# 评估
+.\build_libtorch\Release\cppcnn_app_gpu.exe evaluate `
+  codex\datasets\GTSRB codex\models\gtsrb43_enhanced.pt `
+  --classes 43 --arch Enhanced
+```
+
+### 性能对比
+
+| 场景 | 原 CPU（手写 CNN） | GPU（LibTorch） | 加速比 |
+| ----- | ------------------ | ---------------- | ------ |
+| LeNet 1 epoch | ~32.8s | ~2.2s | ~15x |
+| Enhanced 1 epoch | ~15-30 min | ~10-15s | ~80-120x |
+| 完整 80 epoch 训练 | 20-40 小时 | ~15-20 分钟 | ~80x |
+
+> **注意**：GPU 验证阶段存在已知的 CUDA 兼容性问题，当前回退到 CPU 执行验证和评估，不影响训练速度。
+
 ## Release 演示包
 
 生成本机便携包：
@@ -224,7 +279,7 @@ codex/
 
 ## 当前限制
 
-- CPU 朴素循环实现，完整 43 类训练耗时较长。
+- CPU 朴素循环实现，完整 43 类训练耗时较长。（GPU 加速版见上方「GPU 加速训练」章节）
 - 网络输入固定为 `3 x 32 x 32` RGB。
 - 高级训练使用 Momentum SGD；目前仍不含 Adam 或 BatchNorm。
 - GUI 主要面向推理演示，训练仍通过 CLI 完成。

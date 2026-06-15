@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+﻿cmake_minimum_required(VERSION 3.20)
 
 project(CppCNNTrafficSign
     VERSION 1.1.0
@@ -14,6 +14,7 @@ option(CPPCNN_BUILD_TESTS "Build unit tests" ON)
 option(CPPCNN_BUILD_DEMO_GENERATOR "Build the synthetic demo dataset generator" ON)
 option(CPPCNN_BUILD_SUBSET_TOOL "Build the GTSRB subset creation tool" ON)
 option(CPPCNN_BUILD_GUI "Build the Qt Quick desktop application" ON)
+option(CPPCNN_WITH_LIBTORCH "Build with LibTorch GPU backend (requires CUDA + LibTorch 2.x)" OFF)
 
 find_package(OpenCV QUIET COMPONENTS core imgcodecs imgproc highgui)
 
@@ -128,6 +129,47 @@ if(CPPCNN_BUILD_GUI)
     endif()
 endif()
 
+if(CPPCNN_WITH_LIBTORCH)
+    # LibTorch from the pre-installed SDK (set Torch_DIR if different)
+    set(Torch_DIR "D:/SDK/libtorch-2.12.0-cu130/share/cmake/Torch"
+        CACHE PATH "Path to TorchConfig.cmake")
+    find_package(Torch REQUIRED)
+
+    # LibTorch CNN components (depends on cppcnn_core for data loading)
+    add_library(cppcnn_libtorch
+        src/cnn_libtorch/LibTorchModel.cpp
+        src/cnn_libtorch/GTSRBDataset.cpp
+        src/cnn_libtorch/LibTorchTrainer.cpp
+    )
+    target_include_directories(cppcnn_libtorch PUBLIC src)
+    target_link_libraries(cppcnn_libtorch PUBLIC
+        cppcnn_core
+        ${TORCH_LIBRARIES}
+    )
+    if(MSVC)
+        target_compile_options(cppcnn_libtorch PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(cppcnn_libtorch PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+
+    # GPU-accelerated CLI
+    add_executable(cppcnn_app_gpu src/main_libtorch.cpp)
+    target_link_libraries(cppcnn_app_gpu PRIVATE
+        cppcnn_libtorch
+        cppcnn_core
+        ${TORCH_LIBRARIES}
+    )
+    if(MSVC)
+        target_compile_options(cppcnn_app_gpu PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(cppcnn_app_gpu PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+    install(TARGETS cppcnn_app_gpu RUNTIME DESTINATION .)
+
+    message(STATUS "LibTorch ${TORCH_VERSION} found at ${TORCH_INSTALL_PREFIX}")
+    message(STATUS "CUDA enabled: ${TORCH_CUDA}")
+endif()
+
 if(CPPCNN_BUILD_DEMO_GENERATOR)
     add_executable(cppcnn_demo_generator tools/generate_demo_dataset.cpp)
     if(MSVC)
@@ -185,3 +227,5 @@ if(CPPCNN_BUILD_TESTS)
         )
     endif()
 endif()
+
+
