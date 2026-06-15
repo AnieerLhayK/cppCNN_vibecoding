@@ -1,4 +1,4 @@
-﻿# 纯 C++ CNN 交通标志识别系统
+# 纯 C++ CNN 交通标志识别系统
 
 ## 项目简介
 
@@ -168,7 +168,6 @@ CLI 单图预测：
   codex\assets\labels.txt
 ```
 
-
 ## GPU 加速训练（可选）
 
 LibTorch GPU 后端与原始手写 CNN 完全独立，编译后生成 `cppcnn_app_gpu.exe`，与原版共存互不干扰。仅需额外安装 CUDA 工具链，无需修改任何现有代码。
@@ -218,9 +217,9 @@ cmake --build build_libtorch --config Release
 
 | 场景 | 原 CPU（手写 CNN） | GPU（LibTorch） | 加速比 |
 |------|-------------------|-----------------|--------|
-| LeNet 1 epoch | ~32.8s | ~2.2s | ~15× |
-| Enhanced 1 epoch | ~15–30 min | ~10–15s | ~80–120× |
-| 完整 80 epoch 训练 | 20–40 小时 | ~15–20 分钟 | ~80× |
+| LeNet 1 epoch | ~32.8s | ~2.2s | ~15x |
+| Enhanced 1 epoch | ~15-30 min | ~10-15s | ~80-120x |
+| 完整 80 epoch 训练 | 20-40 小时 | ~15-20 分钟 | ~80x |
 
 > **注意**：GPU 验证阶段存在已知的 CUDA 兼容性问题，当前回退到 CPU 执行验证和评估，不影响训练速度。
 
@@ -280,5 +279,3 @@ codex/
 - 增加混淆矩阵、每类准确率和批量预测页
 - 训练完整 43 类模型并作为后续 GitHub Release 资产发布
 - 增加 GUI 内训练进度、模型管理和中英文切换
-
-
