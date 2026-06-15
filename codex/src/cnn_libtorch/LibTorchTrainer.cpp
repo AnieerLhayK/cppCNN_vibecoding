@@ -2,6 +2,7 @@
 #include "GTSRBDataset.h"
 
 #include <torch/torch.h>
+#include <torch/nn/functional/vision.h>
 
 #include <algorithm>
 #include <chrono>
@@ -9,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -48,6 +50,62 @@ std::vector<size_t> balancedIdx(const std::vector<TrainSample>& samples, int64_t
         std::uniform_int_distribution<size_t> d(0,c.size()-1);
         for(size_t j=0;j<mx;++j) r.push_back(c[d(rg)]); }
     std::shuffle(r.begin(),r.end(),rg); return r;
+}
+
+// ---------------------------------------------------------------------------
+// Batch data augmentation using LibTorch ops.
+// Images: (B, C, H, W) float tensor in [0, 1].
+// Applies: rotation ±15 deg, translation ±4 px, scaling ±10%,
+// brightness ±0.2, contrast factor 0.8-1.2, Gaussian noise σ=0.05.
+// ---------------------------------------------------------------------------
+torch::Tensor augmentBatch(torch::Tensor images, std::mt19937& rng) {
+    auto B = images.size(0);
+    auto C = images.size(1);
+    auto H = images.size(2);
+    auto W = images.size(3);
+    auto device = images.device();
+
+    std::uniform_real_distribution<float> ud(-1.0f, 1.0f);
+
+    // --- Geometric transforms (per-sample affine) ---
+    std::vector<torch::Tensor> warped(static_cast<size_t>(B));
+    namespace F = torch::nn::functional;
+    for (int64_t i = 0; i < B; ++i) {
+        float angle = ud(rng) * 15.0f * 3.14159265f / 180.0f;
+        float tx = ud(rng) * 4.0f / static_cast<float>(W);
+        float ty = ud(rng) * 4.0f / static_cast<float>(H);
+        float scale = 1.0f + ud(rng) * 0.1f;
+        float c = std::cos(angle) * scale;
+        float s = std::sin(angle) * scale;
+        auto theta = torch::tensor({{c, -s, tx}, {s, c, ty}}, torch::kFloat32)
+            .unsqueeze(0).to(device);
+        auto grid = F::affine_grid(theta, torch::IntArrayRef({1, C, H, W}), false);
+        warped[static_cast<size_t>(i)] = F::grid_sample(
+            images[i].unsqueeze(0), grid,
+            F::GridSampleFuncOptions()
+                .mode(torch::kBilinear)
+                .padding_mode(torch::kZeros)
+                .align_corners(false)
+        ).squeeze(0);
+    }
+    auto result = torch::stack(warped);
+
+    // --- Photometric transforms (batch) ---
+    // Brightness ±0.2 per sample
+    auto bright = torch::zeros({B, 1, 1, 1}, torch::kFloat32).to(device);
+    for (int64_t i = 0; i < B; ++i) bright[i][0][0][0] = ud(rng) * 0.2f;
+    result = result + bright;
+
+    // Contrast factor 0.8-1.2 per sample
+    auto means = result.mean({1, 2, 3}, true);
+    auto cFactor = torch::ones({B, 1, 1, 1}, torch::kFloat32).to(device);
+    for (int64_t i = 0; i < B; ++i) cFactor[i][0][0][0] = 1.0f + ud(rng) * 0.2f;
+    result = means + cFactor * (result - means);
+
+    // Gaussian noise sigma = 0.05
+    result = result + torch::randn_like(result) * 0.05f;
+
+    return torch::clamp(result, 0.0f, 1.0f);
 }
 
 } // anon namespace
@@ -94,6 +152,9 @@ LibTorchTrainingReport trainLibTorchModel(
             for (size_t j=s; j<e; ++j) { size_t ix=(*idxPtr)[j];
                 imgs.push_back(trainDS.get(ix).data.to(device)); labs.push_back(trainSamples[ix].label); }
             auto data = torch::stack(imgs);
+            if (opts.enableAugmentation) {
+                data = augmentBatch(data, rng);
+            }
             auto targets = torch::tensor(labs, torch::kInt64).to(device);
             opt.zero_grad();
             auto out = model.forward(data);
@@ -109,7 +170,6 @@ LibTorchTrainingReport trainLibTorchModel(
         std::fill(classCor.begin(), classCor.end(), 0); std::fill(classTot.begin(), classTot.end(), 0);
 
         if (!valSamples.empty()) {
-            // Move model to CPU for validation
             model.to(torch::kCPU);
             for (size_t s=0; s<valPairs.size(); s+=opts.batchSize) {
                 size_t e=std::min(s+opts.batchSize,valPairs.size()), cnt=e-s;
@@ -117,7 +177,7 @@ LibTorchTrainingReport trainLibTorchModel(
                 imgs.reserve(cnt); labs.reserve(cnt);
                 for (size_t j=s; j<e; ++j) {
                     auto ex = valDS.get(j);
-                    imgs.push_back(ex.data); labs.push_back(ex.target.item<int64_t>());  // keep on CPU
+                    imgs.push_back(ex.data); labs.push_back(ex.target.item<int64_t>());
                 }
                 auto data = torch::stack(imgs);
                 auto targets = torch::tensor(labs, torch::kInt64);
@@ -128,7 +188,7 @@ LibTorchTrainingReport trainLibTorchModel(
                 for (int64_t i=0; i<targets.size(0); ++i) { int64_t t=ta[i];
                     if (t>=0 && t<numClasses) { classTot[static_cast<size_t>(t)]++; if (pa[i]==t) classCor[static_cast<size_t>(t)]++; } }
             }
-            model.to(device);  // move back to CUDA for next epoch
+            model.to(device);
         }
 
         auto epEnd = std::chrono::steady_clock::now();
@@ -140,7 +200,20 @@ LibTorchTrainingReport trainLibTorchModel(
             if (classTot[u]>0) { float a=static_cast<float>(classCor[u])/static_cast<float>(classTot[u]); meanClass+=a; minClass=std::min(minClass,a); valid++; } }
         if (valid>0) meanClass/=static_cast<float>(valid); if (valid==0) minClass=0;
         float avgValLoss=valBatches>0?valLoss/static_cast<float>(valBatches):0, avgValAcc=valBatches>0?valAcc/static_cast<float>(valBatches):0;
-        if (avgValAcc>report.bestValAccuracy) { report.bestValAccuracy=avgValAcc; report.bestEpoch=ep; }
+        if (avgValAcc>report.bestValAccuracy) {
+            report.bestValAccuracy=avgValAcc; report.bestEpoch=ep;
+            if (!opts.checkpointPath.empty()) {
+                try {
+                    model.to(torch::kCPU);
+                    model.saveToFile(opts.checkpointPath);
+                    if (opts.verbose) std::cout << "  (best model saved to " << opts.checkpointPath << ")" << std::endl;
+                    model.to(device);
+                } catch (const std::exception& e) {
+                    std::cerr << "Checkpoint save failed: " << e.what() << std::endl;
+                    model.to(device);
+                }
+            }
+        }
 
         LibTorchEpochMetrics m;
         m.epoch=ep; m.trainLoss=trainLoss; m.trainAccuracy=trainAcc; m.valLoss=avgValLoss; m.valAccuracy=avgValAcc;
@@ -152,6 +225,29 @@ LibTorchTrainingReport trainLibTorchModel(
             <<" mean: "<<(meanClass*100)<<"% min: "<<(minClass*100)<<"% | "<<std::setprecision(1)<<epSec<<"s"<<std::endl;
     }
     report.totalDurationSec = std::chrono::duration<float>(std::chrono::steady_clock::now()-startTime).count();
+
+    // Write CSV history
+    if (!opts.csvPath.empty()) {
+        std::ofstream csv(opts.csvPath);
+        if (csv.is_open()) {
+            csv << "epoch,train_loss,train_acc,val_loss,val_acc,mean_class_acc,min_class_acc,lr,duration_sec" << std::endl;
+            for (const auto& m : report.history) {
+                csv << (m.epoch + 1) << ","
+                    << std::fixed << std::setprecision(6) << m.trainLoss << ","
+                    << std::setprecision(6) << m.trainAccuracy << ","
+                    << std::setprecision(6) << m.valLoss << ","
+                    << std::setprecision(6) << m.valAccuracy << ","
+                    << std::setprecision(6) << m.meanClassAccuracy << ","
+                    << std::setprecision(6) << m.minClassAccuracy << ","
+                    << std::setprecision(8) << m.currentLr << ","
+                    << std::setprecision(2) << m.durationSec << std::endl;
+            }
+            if (opts.verbose) std::cout << "CSV history saved to " << opts.csvPath << std::endl;
+        } else {
+            std::cerr << "Failed to open CSV for writing: " << opts.csvPath << std::endl;
+        }
+    }
+
     return report;
 }
 

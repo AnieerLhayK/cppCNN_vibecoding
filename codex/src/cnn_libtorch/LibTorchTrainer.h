@@ -47,6 +47,8 @@ struct LibTorchTrainingOptions {
     bool useCuda = true;
     bool verbose = true;
     std::uint32_t seed = 42;
+    std::string checkpointPath;   ///< Path to save best model checkpoint (empty = skip)
+    std::string csvPath;          ///< Path for CSV epoch history (empty = skip)
 };
 
 // ---------------------------------------------------------------------------

@@ -273,6 +273,8 @@ static int cmdTrain(const Args& args) {
     opts.validationRatio = valRatio;
     opts.enableAugmentation = useAug;
     opts.enableClassBalancing = useBalance;
+    opts.checkpointPath = args.get("checkpoint", "");
+    opts.csvPath = args.get("csv", "");
     opts.useCuda = useCuda;
     opts.verbose = true;
     opts.seed = static_cast<std::uint32_t>(seed);
@@ -344,7 +346,7 @@ static int cmdEvaluate(const Args& args) {
     cppcnn::DataLoaderOptions loaderOpts;
     loaderOpts.classLimit = static_cast<std::size_t>(numClasses);
     cppcnn::DataLoader loader(loaderOpts);
-    auto dataset = loader.loadDataset(datasetDir, cppcnn::DatasetSplit::Training);
+    auto dataset = loader.loadDataset(datasetDir, cppcnn::DatasetSplit::Test);
     auto samples = toTrainSamples(dataset, loader);
 
     std::cout << "Evaluating on " << samples.size() << " samples..." << std::endl;
@@ -504,6 +506,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 }
+
 
 
 
