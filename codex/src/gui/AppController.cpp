@@ -194,6 +194,8 @@ void AppController::predict() {
 }
 
 void AppController::discoverResources() {
+    scanAvailableModels();
+
     const QString model = ResourceLocator::findDefaultModel();
 
     if (model.isEmpty()) {
@@ -237,6 +239,31 @@ void AppController::applyModel(const QString& path) {
         clearPrediction();
         emit modelChanged();
         setStatus(QStringLiteral("Model loaded: %1 classes").arg(info.classCount));
+        scanAvailableModels();
+
+        // If the loaded model is outside the standard models/ directory,
+        // append it to the combo list so it remains selectable.
+        if (!modelPath_.isEmpty()) {
+            bool found = false;
+            for (const auto& entry : availableModels_) {
+                if (entry.toMap().value(QStringLiteral("path")).toString() == modelPath_) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                QVariantMap entry;
+                entry[QStringLiteral("name")] = QFileInfo(modelPath_).fileName();
+                entry[QStringLiteral("path")] = modelPath_;
+                entry[QStringLiteral("classCount")] = static_cast<int>(modelInfo_.classCount);
+                entry[QStringLiteral("architecture")] =
+                    modelInfo_.architecture == cppcnn::CNNArchitecture::Enhanced
+                        ? QStringLiteral("Enhanced")
+                        : QStringLiteral("LeNet");
+                availableModels_.append(entry);
+                emit modelListChanged();
+            }
+        }
     } catch (const std::exception& error) {
         if (!network_) {
             modelInfo_ = {};
@@ -301,4 +328,80 @@ QString AppController::localPath(const QUrl& url) {
     }
     const QUrl parsed(url.toString());
     return parsed.isLocalFile() ? parsed.toLocalFile() : url.toString();
+}
+
+QVariantList AppController::availableModels() const {
+    return availableModels_;
+}
+
+int AppController::currentModelIndex() const {
+    if (modelPath_.isEmpty()) {
+        return -1;
+    }
+    for (int i = 0; i < availableModels_.size(); ++i) {
+        if (availableModels_[i].toMap().value(QStringLiteral("path")).toString() == modelPath_) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void AppController::scanAvailableModels() {
+    availableModels_.clear();
+
+    QStringList searchDirs = {
+        QCoreApplication::applicationDirPath() + QStringLiteral("/models"),
+        QDir::currentPath() + QStringLiteral("/models")
+    };
+
+    // Deduplicate directories
+    QStringList seen;
+    for (const QString& dir : searchDirs) {
+        const QString canonical = QDir(dir).absolutePath();
+        if (seen.contains(canonical, Qt::CaseInsensitive)) {
+            continue;
+        }
+        seen.append(canonical);
+
+        QDir modelDir(dir);
+        if (!modelDir.exists()) {
+            continue;
+        }
+
+        const QFileInfoList entries = modelDir.entryInfoList(
+            { QStringLiteral("*.bin") }, QDir::Files, QDir::Name);
+
+        for (const QFileInfo& fi : entries) {
+            QVariantMap entry;
+            entry[QStringLiteral("name")] = fi.fileName();
+            entry[QStringLiteral("path")] = QDir::toNativeSeparators(fi.absoluteFilePath());
+            // Lightweight header inspection to show class count and architecture.
+            try {
+                const auto info = cppcnn::CNN::inspectModel(
+                    std::filesystem::path(fi.absoluteFilePath().toStdWString()));
+                entry[QStringLiteral("classCount")] = static_cast<int>(info.classCount);
+                entry[QStringLiteral("architecture")] =
+                    info.architecture == cppcnn::CNNArchitecture::Enhanced
+                        ? QStringLiteral("Enhanced")
+                        : QStringLiteral("LeNet");
+            } catch (...) {
+                entry[QStringLiteral("classCount")] = 0;
+                entry[QStringLiteral("architecture")] = QStringLiteral("?");
+            }
+            availableModels_.append(entry);
+        }
+    }
+
+    emit modelListChanged();
+}
+
+void AppController::selectModelByPath(const QString& path) {
+    if (busy_ || path.isEmpty()) {
+        return;
+    }
+    applyModel(path);
+}
+
+void AppController::refreshModelList() {
+    scanAvailableModels();
 }

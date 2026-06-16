@@ -32,6 +32,8 @@ class AppController final : public QObject {
     Q_PROPERTY(qint64 inferenceMilliseconds READ inferenceMilliseconds NOTIFY predictionChanged)
     Q_PROPERTY(QVariantList topResults READ topResults NOTIFY predictionChanged)
     Q_PROPERTY(QVariantList demoImages READ demoImages CONSTANT)
+    Q_PROPERTY(QVariantList availableModels READ availableModels NOTIFY modelListChanged)
+    Q_PROPERTY(int currentModelIndex READ currentModelIndex NOTIFY modelChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY statusChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY statusChanged)
 
@@ -63,9 +65,12 @@ public:
     Q_INVOKABLE void clearImage();
     Q_INVOKABLE void loadModel(const QUrl& url);
     Q_INVOKABLE void predict();
+    Q_INVOKABLE void selectModelByPath(const QString& path);
+    Q_INVOKABLE void refreshModelList();
 
 signals:
     void modelChanged();
+    void modelListChanged();
     void imageChanged();
     void busyChanged();
     void predictionChanged();
@@ -77,6 +82,9 @@ private:
     void clearPrediction();
     void setStatus(const QString& status, const QString& error = {});
     void finishPrediction();
+    [[nodiscard]] QVariantList availableModels() const;
+    [[nodiscard]] int currentModelIndex() const;
+    void scanAvailableModels();
     [[nodiscard]] static QString localPath(const QUrl& url);
 
     std::shared_ptr<cppcnn::CNN> network_;
@@ -96,6 +104,7 @@ private:
     QString errorText_;
     QVariantList topResults_;
     QVariantList demoImages_;
+    QVariantList availableModels_;
     double confidence_ = 0.0;
     qint64 inferenceMilliseconds_ = 0;
     bool imageLoaded_ = false;

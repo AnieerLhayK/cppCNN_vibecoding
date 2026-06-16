@@ -171,22 +171,6 @@ ApplicationWindow {
                     }
                 }
 
-                Rectangle {
-                    implicitWidth: classLabel.implicitWidth + 24
-                    implicitHeight: 30
-                    radius: 15
-                    color: "#172238"
-                    border.color: "#2A3B5D"
-
-                    Label {
-                        id: classLabel
-                        anchors.centerIn: parent
-                        text: appController.classCount > 0 ? appController.classCount + " classes" : "No classes"
-                        color: "#A9B6CF"
-                        font.pixelSize: 12
-                    }
-                }
-
                 AppButton {
                     text: "Settings"
                     compact: true
@@ -220,30 +204,128 @@ ApplicationWindow {
                 spacing: 16
 
                 Rectangle {
-                    visible: !appController.modelLoaded
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 54
+                    Layout.preferredHeight: 50
                     radius: 12
-                    color: "#2B2232"
-                    border.color: "#6A485F"
+                    color: appController.modelLoaded ? "#151E2D" : "#2B2232"
+                    border.color: appController.modelLoaded ? "#26334D" : "#6A485F"
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 16
+                        anchors.leftMargin: 14
                         anchors.rightMargin: 10
+                        spacing: 8
 
                         Label {
-                            text: "A trained model was not found. The interface remains available, but recognition is disabled."
-                            color: "#F0CADC"
-                            font.pixelSize: 13
-                            Layout.fillWidth: true
-                            elide: Text.ElideRight
+                            text: "Model"
+                            color: "#71809C"
+                            font.pixelSize: 11
+                            font.weight: Font.Bold
+                            font.letterSpacing: 0.8
                         }
+
+                        ComboBox {
+                            id: modelCombo
+                            Layout.preferredWidth: 300
+                            Layout.maximumWidth: 360
+                            model: appController.availableModels
+                            textRole: "name"
+                            valueRole: "path"
+                            currentIndex: appController.currentModelIndex >= 0 ? appController.currentModelIndex : 0
+                            enabled: appController.availableModels.length > 0 && !appController.busy
+
+                            onActivated: function(index) {
+                                const path = modelCombo.currentValue
+                                if (path)
+                                    appController.selectModelByPath(path)
+                            }
+
+                            delegate: ItemDelegate {
+                                width: modelCombo.width
+                                contentItem: Column {
+                                    leftPadding: 10
+                                    spacing: 1
+                                    Label {
+                                        text: modelData.name || ""
+                                        color: "#F3F6FD"
+                                        font.pixelSize: 13
+                                    }
+                                    Label {
+                                        visible: modelData.classCount > 0
+                                        text: (modelData.classCount || "?") + " classes  ·  " + (modelData.architecture || "?")
+                                        color: "#92A1BC"
+                                        font.pixelSize: 10
+                                    }
+                                }
+                                background: Rectangle {
+                                    color: modelCombo.highlightedIndex === index ? "#1A253F" : "transparent"
+                                }
+                            }
+
+                            contentItem: RowLayout {
+                                spacing: 6
+                                leftPadding: 10
+                                Label {
+                                    text: modelCombo.currentText || "No .bin models found"
+                                    color: modelCombo.currentText ? "#F3F6FD" : "#6F7F9B"
+                                    font.pixelSize: 13
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                }
+                            }
+
+                            background: Rectangle {
+                                radius: 8
+                                color: "#0B1120"
+                                border.color: "#26334D"
+                                border.width: 1
+                            }
+
+                            indicator: Rectangle {
+                                x: modelCombo.width - width - 8
+                                y: (modelCombo.height - height) / 2
+                                width: 20
+                                height: 20
+                                color: "transparent"
+                                Label {
+                                    anchors.centerIn: parent
+                                    text: "▾"
+                                    color: "#92A1BC"
+                                    font.pixelSize: 12
+                                }
+                            }
+                        }
+
                         AppButton {
-                            text: "Select model"
+                            text: "Browse"
                             compact: true
-                            accent: true
+                            toolTip: "Choose a model file (Ctrl+M)"
                             onClicked: modelDialog.open()
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        Rectangle {
+                            visible: appController.modelLoaded
+                            implicitWidth: classBadge.implicitWidth + 18
+                            implicitHeight: 24
+                            radius: 12
+                            color: "#172238"
+                            border.color: "#2A3B5D"
+                            Label {
+                                id: classBadge
+                                anchors.centerIn: parent
+                                text: appController.classCount + " classes"
+                                color: "#A9B6CF"
+                                font.pixelSize: 11
+                            }
+                        }
+
+                        Label {
+                            visible: !appController.modelLoaded
+                            text: "No model — recognition disabled"
+                            color: "#F0CADC"
+                            font.pixelSize: 12
                         }
                     }
                 }
@@ -693,7 +775,7 @@ ApplicationWindow {
                     Layout.maximumWidth: 390
                 }
                 Label {
-                    text: "Ctrl+O Open  |  Ctrl+Enter Recognize  |  Esc Clear"
+                    text: "Ctrl+O Open  |  Ctrl+M Model  |  Ctrl+Enter Recognize  |  Esc Clear"
                     color: "#4F607C"
                     font.pixelSize: 10
                     visible: window.width >= 1250
