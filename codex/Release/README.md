@@ -30,11 +30,13 @@ cppcnn_gui.exe
 Release/
 ├── cppcnn_gui.exe          # Qt 桌面界面
 ├── cppcnn_app.exe          # CLI 训练与推理程序
+├── cppcnn_app_gpu.exe      # CLI GPU 加速版 (LibTorch, 可选)
 ├── Qt6*.dll                # Qt 运行库，本地生成且不入 Git
 ├── plugins/                # Qt 平台与图片插件
 ├── qml/                    # Qt Quick 运行模块
 ├── models/
-│   └── gtsrb_v2_subset10.bin  # 训练权重，本地生成且不入 Git
+│   ├── gtsrb_v2_subset10.bin  # 默认 10 类模型
+│   └── gtsrb_v5_full43.bin    # 完整 43 类模型 (Ctrl+M 加载)
 ├── demo_images/            # 五张 GTSRB 演示图片
 ├── labels.txt              # 10 类标签
 ├── qt.conf                 # 便携资源路径

@@ -14,7 +14,13 @@ models/gtsrb_v2_subset10.bin
 models/gtsrb_v4_semantic10.bin
 ```
 
-两个模型使用不同类别映射，必须配合各自同名的 `.labels.txt`。GUI 会优先查找模型同目录下的同名标签文件。训练日志与元数据分别使用 `.training.log` 和 `.metadata.json`，不进入 Git。
+完整 43 类模型（Enhanced 架构，通过 GUI Ctrl+M 加载）：
+
+```text
+models/gtsrb_v5_full43.bin
+```
+
+三个模型使用不同类别映射，必须配合各自同名的 `.labels.txt`。GUI 会优先查找模型同目录下的同名标签文件。训练日志与元数据分别使用 `.training.log` 和 `.metadata.json`，不进入 Git。
 
 ## 自定义格式
 

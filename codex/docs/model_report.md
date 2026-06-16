@@ -33,6 +33,7 @@
 | --- | --- | --- | --- |
 | gtsrb_v2_subset10.bin | 204 KB | 10 类 | UI 默认加载模型 |
 | gtsrb_v4_semantic10.bin | 204 KB | 10 类 | 语义子集版本 |
+| gtsrb_v5_full43.bin | 4.9 MB | 43 类 | Enhanced 完整集 (Ctrl+M) |
 
 ---
 

@@ -149,6 +149,23 @@ Copy-Item `
     -Destination (Join-Path $packageRoot "models\gtsrb_v2_subset10.bin") `
     -Force
 
+# Also include the full 43-class model for manual Ctrl+M loading.
+$full43Model = Join-Path $projectRoot "models\gtsrb_v5_full43.bin"
+$full43Labels = Join-Path $projectRoot "models\gtsrb_v5_full43.labels.txt"
+if (Test-Path -LiteralPath $full43Model -PathType Leaf) {
+    Copy-Item -LiteralPath $full43Model -Destination (Join-Path $packageRoot "models\gtsrb_v5_full43.bin") -Force
+}
+if (Test-Path -LiteralPath $full43Labels -PathType Leaf) {
+    Copy-Item -LiteralPath $full43Labels -Destination (Join-Path $packageRoot "models\gtsrb_v5_full43.labels.txt") -Force
+}
+
+# Include the GPU-accelerated CLI if pre-built.
+$gpuAppSource = Join-Path $projectRoot "build_libtorch\cppcnn_app_gpu.exe"
+if (Test-Path -LiteralPath $gpuAppSource -PathType Leaf) {
+    Write-Host "GPU executable found; including in package."
+    Copy-Item -LiteralPath $gpuAppSource -Destination (Join-Path $packageRoot "cppcnn_app_gpu.exe") -Force
+}
+
 $deliveryFiles = @(
     "README.md",
     "run_demo.bat",
