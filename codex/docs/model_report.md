@@ -146,9 +146,9 @@
 ### 当前已完成
 
 1. **导出到 .bin (已完成)**：通过 cppcnn_app_gpu export 命令将 gtsrb_v5_enhanced_full_best.pt 成功导出为 gtsrb_v5_full43.bin
-   * 格式：Magic(CPPCNN1\0) + Version 2 + 43 classes + Enhanced + 6 层
-   * 大小：4,906,800 字节 (4.9 MB)
-   * 标签：gtsrb_v5_full43.labels.txt (43 行，GTSRB 标准命名)
-   * GUI 通过 Ctrl+M 加载此 .bin 文件即可使用 Phase C 模型
+   - 格式：Magic(CPPCNN1\0) + Version 2 + 43 classes + Enhanced + 6 层
+   - 大小：4,906,800 字节 (4.9 MB)
+   - 标签：gtsrb_v5_full43.labels.txt (43 行，GTSRB 标准命名)
+   - GUI 通过 Ctrl+M 加载此 .bin 文件即可使用 Phase C 模型
 2. **GUI 集成 LibTorch**：未进行
 3. **CLI 推理**：始终可用，cppcnn_app_gpu predict
