@@ -167,7 +167,7 @@ void AppController::predict() {
     if (!network_) {
         setStatus(
             QStringLiteral("Model required"),
-            QStringLiteral("Load gtsrb_subset10.bin before running recognition."));
+            QStringLiteral("Load gtsrb_v2_subset10.bin before running recognition."));
         return;
     }
     if (!imageLoaded_ || inputTensor_.empty()) {
@@ -201,7 +201,7 @@ void AppController::discoverResources() {
         modelDetails_ = QStringLiteral("Select a compatible .bin model to enable recognition.");
         setStatus(
             QStringLiteral("Interface ready; model not found."),
-            QStringLiteral("Expected models/gtsrb_subset10.bin beside the application or under codex/models."));
+            QStringLiteral("Expected models/gtsrb_v2_subset10.bin beside the application or under codex/models."));
         emit modelChanged();
         return;
     }

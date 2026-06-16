@@ -109,8 +109,8 @@ GUI：
 
 默认模型搜索顺序：
 
-1. 可执行文件同级的 `models/gtsrb_subset10.bin`
-2. 开发目录 `codex/models/gtsrb_subset10.bin`
+1. 可执行文件同级的 `models/gtsrb_v2_subset10.bin`
+2. 开发目录 `codex/models/gtsrb_v2_subset10.bin`
 
 加载模型后的标签搜索顺序：
 
@@ -125,7 +125,7 @@ CLI 训练：
 ```powershell
 .\codex\build\Release\cppcnn_app.exe train `
   codex\datasets\GTSRB_subset `
-  codex\models\gtsrb_subset10.bin `
+  codex\models\gtsrb_v2_subset10.bin `
   10 5 0 16 0.01 0.0001 42
 ```
 
@@ -135,7 +135,7 @@ CLI 训练：
 .\codex\scripts\train_model.ps1
 ```
 
-该脚本默认训练独立的语义均衡模型 `gtsrb_semantic10.bin`，不会覆盖当前 Release 使用的 `gtsrb_subset10.bin`。参数、归档和模型切换说明见 [`docs/developer_training.md`](docs/developer_training.md)。
+该脚本默认训练独立的语义均衡模型 `gtsrb_v4_semantic10.bin`，不会覆盖当前 Release 使用的 `gtsrb_v2_subset10.bin`。参数、归档和模型切换说明见 [`docs/developer_training.md`](docs/developer_training.md)。
 
 GUI 不提供训练功能，只负责推理。开发者可在 Settings 中手动选择任一模型；程序会优先读取模型同名的 `.labels.txt`。
 
@@ -159,7 +159,7 @@ CLI 评估：
 ```powershell
 .\codex\build\Release\cppcnn_app.exe evaluate `
   codex\datasets\GTSRB_subset `
-  codex\models\gtsrb_subset10.bin 0
+  codex\models\gtsrb_v2_subset10.bin 0
 ```
 
 CLI 单图预测：
@@ -167,7 +167,7 @@ CLI 单图预测：
 ```powershell
 .\codex\build\Release\cppcnn_app.exe predict `
   codex\Release\demo_images\01_speed_limit_30.ppm `
-  codex\models\gtsrb_subset10.bin `
+  codex\models\gtsrb_v2_subset10.bin `
   codex\assets\labels.txt
 ```
 
@@ -234,7 +234,7 @@ cmake --build build_libtorch --config Release
 .\codex\scripts\package_release.ps1 `
   -BuildDirectory D:\AI\data\codex\cache\staging\cppcnn-release-build `
   -ArtifactsDirectory D:\AI\data\codex\cache\staging\cppcnn-release-artifacts `
-  -ModelPath .\codex\models\gtsrb_subset10.bin `
+  -ModelPath .\codex\models\gtsrb_v2_subset10.bin `
   -QtRoot C:\Qt\6.11.1\msvc2022_64 `
   -Version 1.1.0
 ```

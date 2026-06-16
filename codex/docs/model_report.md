@@ -11,28 +11,28 @@
 
 | 文件名 | 大小 | 说明 |
 | --- | --- | --- |
-| phase_c_enhanced_aug_best.pt | 5,156 KB | 当前最佳 - Phase C, 97.5% val, epoch 30 |
-| phase_c_enhanced_aug.pt | 5,156 KB | Phase C 最终模型, epoch 80 |
-| phase_b_b4_enhanced_aug_best.pt | 5,156 KB | Phase B4 best, 95.12% val |
-| phase_b_b4_enhanced_aug.pt | 5,156 KB | Phase B4 最终 |
-| phase_b_b3_enhanced_plain_best.pt | 5,156 KB | Phase B3 best, 94.53% val |
-| phase_b_b3_enhanced_plain.pt | 5,156 KB | Phase B3 最终 |
+| gtsrb_v5_enhanced_full_best.pt | 5,156 KB | 当前最佳 - Phase C, 97.5% val, epoch 30 |
+| gtsrb_v5_enhanced_full.pt | 5,156 KB | Phase C 最终模型, epoch 80 |
+| gtsrb_v4_enhanced_aug_best.pt | 5,156 KB | Phase B4 best, 95.12% val |
+| gtsrb_v4_enhanced_aug.pt | 5,156 KB | Phase B4 最终 |
+| gtsrb_v3_enhanced_plain_best.pt | 5,156 KB | Phase B3 best, 94.53% val |
+| gtsrb_v3_enhanced_plain.pt | 5,156 KB | Phase B3 最终 |
 
 ### 1.2 LeNet 架构 (~56K 参数)
 
 | 文件名 | 大小 | 说明 |
 | --- | --- | --- |
-| phase_b_b1_lenet_plain_best.pt | 227 KB | LeNet baseline, 89.69% val |
-| phase_b_b1_lenet_plain.pt | 227 KB | Phase B1 最终 |
-| phase_b_b2_lenet_aug_best.pt | 227 KB | LeNet + aug, 89.90% val |
-| phase_b_b2_lenet_aug.pt | 227 KB | Phase B2 最终 |
+| gtsrb_v1_lenet_plain_best.pt | 227 KB | LeNet baseline, 89.69% val |
+| gtsrb_v1_lenet_plain.pt | 227 KB | Phase B1 最终 |
+| gtsrb_v2_lenet_aug_best.pt | 227 KB | LeNet + aug, 89.90% val |
+| gtsrb_v2_lenet_aug.pt | 227 KB | Phase B2 最终 |
 
 ### 1.3 cppCNN 原生格式 (.bin)
 
 | 文件名 | 大小 | 类数 | 说明 |
 | --- | --- | --- | --- |
-| gtsrb_subset10.bin | 204 KB | 10 类 | UI 默认加载模型 |
-| gtsrb_semantic10.bin | 204 KB | 10 类 | 语义子集版本 |
+| gtsrb_v2_subset10.bin | 204 KB | 10 类 | UI 默认加载模型 |
+| gtsrb_v4_semantic10.bin | 204 KB | 10 类 | 语义子集版本 |
 
 ---
 
@@ -131,6 +131,7 @@
 **无法切换：** 当前 UI (cppcnn_gui.exe) 不能加载任何 .pt 格式模型 (包括 Phase C 的 Enhanced 最佳模型)。
 
 原因：
+
 1. GUI 使用纯 C++ CNN 后端，不支持 PyTorch/LibTorch 序列化格式
 2. 文件对话框过滤器限制为 *.bin 文件
 3. InferenceEngine 使用 cppcnn::CNN::forward()，而非 LibTorch 推理路径
@@ -138,16 +139,16 @@
 ### 能做什么
 
 - 通过 Ctrl+M 或菜单选择任意 .bin 模型文件进行切换
-- 当前可用：gtsrb_subset10.bin (10类)、gtsrb_semantic10.bin (10类)、**gtsrb_43class_enhanced.bin (43类, Enhanced)**
+- 当前可用：gtsrb_v2_subset10.bin (10类)、gtsrb_v4_semantic10.bin (10类)、**gtsrb_v5_full43.bin (43类, Enhanced)**
 - 自动加载配套的 labels.txt
 - 界面上实时显示类数、架构类型、参数信息
 
 ### 当前已完成
 
-1. **导出到 .bin (已完成)**：通过 cppcnn_app_gpu export 命令将 phase_c_enhanced_aug_best.pt 成功导出为 gtsrb_43class_enhanced.bin
+1. **导出到 .bin (已完成)**：通过 cppcnn_app_gpu export 命令将 gtsrb_v5_enhanced_full_best.pt 成功导出为 gtsrb_v5_full43.bin
    * 格式：Magic(CPPCNN1\0) + Version 2 + 43 classes + Enhanced + 6 层
    * 大小：4,906,800 字节 (4.9 MB)
-   * 标签：gtsrb_43class_enhanced.labels.txt (43 行，GTSRB 标准命名)
+   * 标签：gtsrb_v5_full43.labels.txt (43 行，GTSRB 标准命名)
    * GUI 通过 Ctrl+M 加载此 .bin 文件即可使用 Phase C 模型
 2. **GUI 集成 LibTorch**：未进行
 3. **CLI 推理**：始终可用，cppcnn_app_gpu predict

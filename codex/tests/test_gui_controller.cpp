@@ -69,7 +69,7 @@ void testCompanionLabels() {
 
 void testModelAndPrediction(AppController& controller, const QString& sourceDirectory) {
     const QString modelPath =
-        QDir(sourceDirectory).filePath(QStringLiteral("models/gtsrb_subset10.bin"));
+        QDir(sourceDirectory).filePath(QStringLiteral("models/gtsrb_v2_subset10.bin"));
     if (!QFileInfo::exists(modelPath)) {
         std::cout << "GUI model inference checks skipped: local model is intentionally absent.\n";
         return;
@@ -125,11 +125,11 @@ void testModelAndPrediction(AppController& controller, const QString& sourceDire
     expect(!controller.errorText().isEmpty(), "A missing model must produce a visible error.");
 
     const QString semanticModelPath =
-        QDir(sourceDirectory).filePath(QStringLiteral("models/gtsrb_semantic10.bin"));
+        QDir(sourceDirectory).filePath(QStringLiteral("models/gtsrb_v4_semantic10.bin"));
     if (QFileInfo::exists(semanticModelPath)) {
         controller.loadModel(QUrl::fromLocalFile(semanticModelPath));
         expect(
-            controller.labelsPath().endsWith(QStringLiteral("gtsrb_semantic10.labels.txt")),
+            controller.labelsPath().endsWith(QStringLiteral("gtsrb_v4_semantic10.labels.txt")),
             "The semantic model did not load its companion labels.");
     }
 }

@@ -389,7 +389,7 @@ void App::printUsage() {
 void App::printResourceStatus() {
     const std::filesystem::path fullDataset = "datasets/GTSRB";
     const std::filesystem::path subsetDataset = "datasets/GTSRB_subset";
-    const std::filesystem::path defaultModel = "models/gtsrb10.bin";
+    const std::filesystem::path defaultModel = "models/gtsrb_v2_subset10.bin";
 
     std::cout
         << "Resource status:\n"

@@ -2,13 +2,13 @@
 
 ## 用途
 
-`gtsrb_semantic10.bin` 是纯 C++ LeNet 风格 CNN 的语义均衡开发模型，用于验证比原限速牌集中子集更广的交通标志分类能力。
+`gtsrb_v4_semantic10.bin` 是纯 C++ LeNet 风格 CNN 的语义均衡开发模型，用于验证比原限速牌集中子集更广的交通标志分类能力。
 
-该模型不会替换 `gtsrb_subset10.bin`。当前教师演示 Release 仍默认加载原模型。
+该模型不会替换 `gtsrb_v2_subset10.bin`。当前教师演示 Release 仍默认加载原模型。
 
 ## 类别
 
-输出索引顺序由 `gtsrb_semantic10.labels.txt` 定义：
+输出索引顺序由 `gtsrb_v4_semantic10.labels.txt` 定义：
 
 1. 50 km/h speed limit
 2. No passing
@@ -57,14 +57,14 @@
 
 ## 使用
 
-在 GUI 中手动选择 `gtsrb_semantic10.bin`。程序会自动读取同目录的 `gtsrb_semantic10.labels.txt`。
+在 GUI 中手动选择 `gtsrb_v4_semantic10.bin`。程序会自动读取同目录的 `gtsrb_v4_semantic10.labels.txt`。
 
 CLI：
 
 ```powershell
 .\build\Release\cppcnn_app.exe evaluate `
   datasets\GTSRB_semantic10 `
-  models\gtsrb_semantic10.bin 0
+  models\gtsrb_v4_semantic10.bin 0
 ```
 
 权重通过 GitHub Release 模型资产分发，不进入 Git。

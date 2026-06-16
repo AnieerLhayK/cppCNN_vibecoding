@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 set "APP=cppcnn_gui.exe"
-set "MODEL=models\gtsrb_subset10.bin"
+set "MODEL=models\gtsrb_v2_subset10.bin"
 
 if not exist "%APP%" (
     echo [ERROR] Missing executable: %APP%

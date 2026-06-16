@@ -63,7 +63,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $QtRoot "bin\windeployqt.exe") -Path
 }
 
 if ([string]::IsNullOrWhiteSpace($ModelPath)) {
-    $ModelPath = Join-Path $projectRoot "models\gtsrb_subset10.bin"
+    $ModelPath = Join-Path $projectRoot "models\gtsrb_v2_subset10.bin"
 }
 if (-not (Test-Path -LiteralPath $ModelPath -PathType Leaf)) {
     throw "Trained model is missing: $ModelPath"
@@ -146,7 +146,7 @@ foreach ($image in $demoImages) {
 
 Copy-Item `
     -LiteralPath $ModelPath `
-    -Destination (Join-Path $packageRoot "models\gtsrb_subset10.bin") `
+    -Destination (Join-Path $packageRoot "models\gtsrb_v2_subset10.bin") `
     -Force
 
 $deliveryFiles = @(

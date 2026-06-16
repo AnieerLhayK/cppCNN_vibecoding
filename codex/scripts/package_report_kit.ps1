@@ -35,7 +35,7 @@ $requiredApplicationFiles = @(
     "cppcnn_app.exe",
     "run_demo.bat",
     "labels.txt",
-    "models\gtsrb_subset10.bin",
+    "models\gtsrb_v2_subset10.bin",
     "plugins\platforms\qwindows.dll",
     "qml\QtQuick\qtquick2plugin.dll"
 )
@@ -80,7 +80,7 @@ $sourceEntries = @(
     "include",
     "models\.gitignore",
     "models\README.md",
-    "models\gtsrb_semantic10.labels.txt",
+    "models\gtsrb_v4_semantic10.labels.txt",
     "models\gtsrb_semantic10_model_card.md",
     "models\gtsrb_subset10.labels.txt",
     "qml",

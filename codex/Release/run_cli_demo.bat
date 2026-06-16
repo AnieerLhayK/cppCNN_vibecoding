@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 set "APP=cppcnn_app.exe"
-set "MODEL=models\gtsrb_subset10.bin"
+set "MODEL=models\gtsrb_v2_subset10.bin"
 set "IMAGE=demo_images\01_speed_limit_30.ppm"
 set "LABELS=labels.txt"
 

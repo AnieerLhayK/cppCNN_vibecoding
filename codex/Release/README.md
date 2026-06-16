@@ -34,7 +34,7 @@ Release/
 ├── plugins/                # Qt 平台与图片插件
 ├── qml/                    # Qt Quick 运行模块
 ├── models/
-│   └── gtsrb_subset10.bin  # 训练权重，本地生成且不入 Git
+│   └── gtsrb_v2_subset10.bin  # 训练权重，本地生成且不入 Git
 ├── demo_images/            # 五张 GTSRB 演示图片
 ├── labels.txt              # 10 类标签
 ├── qt.conf                 # 便携资源路径
@@ -59,7 +59,7 @@ Epoch：5
 
 ```powershell
 .\codex\scripts\package_release.ps1 `
-  -ModelPath .\codex\models\gtsrb_subset10.bin `
+  -ModelPath .\codex\models\gtsrb_v2_subset10.bin `
   -QtRoot C:\Qt\6.11.1\msvc2022_64 `
   -Version 1.1.0
 ```

@@ -12,9 +12,9 @@ QString ResourceLocator::findDefaultModel() {
     const QString applicationDir = QCoreApplication::applicationDirPath();
     const QString currentDir = QDir::currentPath();
     return firstExistingFile({
-        QDir(applicationDir).filePath(QStringLiteral("models/gtsrb_subset10.bin")),
-        QDir(currentDir).filePath(QStringLiteral("codex/models/gtsrb_subset10.bin")),
-        QDir(currentDir).filePath(QStringLiteral("models/gtsrb_subset10.bin")),
+        QDir(applicationDir).filePath(QStringLiteral("models/gtsrb_v2_subset10.bin")),
+        QDir(currentDir).filePath(QStringLiteral("codex/models/gtsrb_v2_subset10.bin")),
+        QDir(currentDir).filePath(QStringLiteral("models/gtsrb_v2_subset10.bin")),
     });
 }
 

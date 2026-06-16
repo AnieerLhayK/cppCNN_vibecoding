@@ -62,7 +62,7 @@ function Resolve-ProjectPath {
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $DatasetSource = Resolve-ProjectPath $DatasetSource "datasets\GTSRB"
 $SubsetDirectory = Resolve-ProjectPath $SubsetDirectory "datasets\GTSRB_semantic10"
-$ModelPath = Resolve-ProjectPath $ModelPath "models\gtsrb_semantic10.bin"
+$ModelPath = Resolve-ProjectPath $ModelPath "models\gtsrb_v4_semantic10.bin"
 if ([string]::IsNullOrWhiteSpace($BuildDirectory)) {
     $BuildDirectory = "D:\AI\data\codex\cache\staging\cppcnn-training-build"
 }

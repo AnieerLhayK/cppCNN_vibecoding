@@ -128,15 +128,15 @@ class_ids=1,2,3,4,5,7,8,9,10,11
 
 ```powershell
 .\build\Release\cppcnn_app.exe train `
-  datasets\GTSRB_subset models\gtsrb_subset10.bin `
+  datasets\GTSRB_subset models\gtsrb_v2_subset10.bin `
   10 5 0 16 0.01 0.0001 42
 
 .\build\Release\cppcnn_app.exe evaluate `
-  datasets\GTSRB_subset models\gtsrb_subset10.bin 0
+  datasets\GTSRB_subset models\gtsrb_v2_subset10.bin 0
 
 .\build\Release\cppcnn_app.exe predict `
   datasets\GTSRB_subset\test\00001\00001.ppm `
-  models\gtsrb_subset10.bin datasets\GTSRB_subset\labels.txt
+  models\gtsrb_v2_subset10.bin datasets\GTSRB_subset\labels.txt
 ```
 
 ## 6. 切换到完整 43 类

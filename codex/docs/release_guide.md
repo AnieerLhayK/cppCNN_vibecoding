@@ -18,7 +18,7 @@
 .\codex\scripts\package_release.ps1 `
   -BuildDirectory D:\AI\data\codex\cache\staging\cppcnn-release-build `
   -ArtifactsDirectory D:\AI\data\codex\cache\staging\cppcnn-release-artifacts `
-  -ModelPath .\codex\models\gtsrb_subset10.bin `
+  -ModelPath .\codex\models\gtsrb_v2_subset10.bin `
   -QtRoot C:\Qt\6.11.1\msvc2022_64 `
   -Version 1.1.0
 ```

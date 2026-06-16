@@ -3,7 +3,7 @@
 正式发布模型应命名为：
 
 ```text
-gtsrb_subset10.bin
+gtsrb_v2_subset10.bin
 ```
 
 该文件对应 `labels.txt` 中的 10 个类别，使用项目自定义 `CPPCNN1` 二进制格式。

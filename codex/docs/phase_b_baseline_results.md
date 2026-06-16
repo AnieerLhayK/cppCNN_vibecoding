@@ -1,4 +1,4 @@
-﻿# Phase B: Architecture Baseline Comparison
+# Phase B: Architecture Baseline Comparison
 
 > **Date:** 2026-06-16  
 > **Backend:** LibTorch GPU (RTX 4060 Laptop, 8 GB VRAM, CUDA 13.0)  
@@ -26,10 +26,10 @@
 
 | ID | Architecture | Params | Augmentation | Model File |
 |----|-------------|--------|-------------|------------|
-| B1 | LeNet (2 Conv + 2 FC) | 56,195 | No | `phase_b_b1_lenet_plain.pt` |
-| B2 | LeNet (2 Conv + 2 FC) | 56,195 | Yes | `phase_b_b2_lenet_aug.pt` |
-| B3 | Enhanced (3 Conv + 3 FC) | 1,286,251 | No | `phase_b_b3_enhanced_plain.pt` |
-| B4 | Enhanced (3 Conv + 3 FC) | 1,286,251 | Yes | `phase_b_b4_enhanced_aug.pt` |
+| B1 | LeNet (2 Conv + 2 FC) | 56,195 | No | `gtsrb_v1_lenet_plain.pt` |
+| B2 | LeNet (2 Conv + 2 FC) | 56,195 | Yes | `gtsrb_v2_lenet_aug.pt` |
+| B3 | Enhanced (3 Conv + 3 FC) | 1,286,251 | No | `gtsrb_v3_enhanced_plain.pt` |
+| B4 | Enhanced (3 Conv + 3 FC) | 1,286,251 | Yes | `gtsrb_v4_enhanced_aug.pt` |
 
 ---
 
@@ -174,13 +174,13 @@ Enhanced improves the worst-class accuracy from **16.67% → 45.00%** — critic
 
 | File | Size | SHA-256 |
 |------|------|---------|
-| `phase_b_b1_lenet_plain.pt` | 227 KB | `EFEFC9C2...` |
-| `phase_b_b1_lenet_plain_best.pt` | 227 KB | `47951CDB...` |
-| `phase_b_b2_lenet_aug.pt` | 226 KB | `137EED82...` |
-| `phase_b_b2_lenet_aug_best.pt` | 226 KB | `D168FA8C...` |
-| `phase_b_b3_enhanced_plain.pt` | 5,036 KB | `04CFFABF...` |
-| `phase_b_b3_enhanced_plain_best.pt` | 5,036 KB | `D2497F1B...` |
-| `phase_b_b4_enhanced_aug.pt` | 5,036 KB | `E850D626...` |
-| `phase_b_b4_enhanced_aug_best.pt` | 5,036 KB | `4B6A45A2...` |
+| `gtsrb_v1_lenet_plain.pt` | 227 KB | `EFEFC9C2...` |
+| `gtsrb_v1_lenet_plain_best.pt` | 227 KB | `47951CDB...` |
+| `gtsrb_v2_lenet_aug.pt` | 226 KB | `137EED82...` |
+| `gtsrb_v2_lenet_aug_best.pt` | 226 KB | `D168FA8C...` |
+| `gtsrb_v3_enhanced_plain.pt` | 5,036 KB | `04CFFABF...` |
+| `gtsrb_v3_enhanced_plain_best.pt` | 5,036 KB | `D2497F1B...` |
+| `gtsrb_v4_enhanced_aug.pt` | 5,036 KB | `E850D626...` |
+| `gtsrb_v4_enhanced_aug_best.pt` | 5,036 KB | `4B6A45A2...` |
 
 Logs: `codex/logs/phase_b/B[1-4]_*.csv`
