@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "1.1.0",
+    [string]$Version = "2.0.0",
     [string]$ApplicationDirectory = "",
     [string]$OutputDirectory = (Join-Path ([System.IO.Path]::GetTempPath()) "cppcnn-report-kit")
 )
@@ -14,7 +14,7 @@ if ([string]::IsNullOrWhiteSpace($ApplicationDirectory)) {
 }
 
 if ($Version -notmatch '^\d+\.\d+\.\d+([-.][0-9A-Za-z.-]+)?$') {
-    throw "Version must use a release form such as 1.1.0: $Version"
+    throw "Version must use a release form such as 2.0.0: $Version"
 }
 
 $packageName = "cppCNN-Codex-Report-Kit-v$Version"
@@ -36,6 +36,8 @@ $requiredApplicationFiles = @(
     "run_demo.bat",
     "labels.txt",
     "models\gtsrb_v2_subset10.bin",
+    "models\gtsrb_v5_full43.bin",
+    "models\gtsrb_v5_full43.labels.txt",
     "plugins\platforms\qwindows.dll",
     "qml\QtQuick\qtquick2plugin.dll"
 )
@@ -77,12 +79,12 @@ $sourceEntries = @(
     "datasets\.gitignore",
     "datasets\README.md",
     "docs",
-    "include",
     "models\.gitignore",
     "models\README.md",
+    "models\gtsrb_v2_subset10.labels.txt",
     "models\gtsrb_v4_semantic10.labels.txt",
+    "models\gtsrb_v5_full43.labels.txt",
     "models\gtsrb_semantic10_model_card.md",
-    "models\gtsrb_subset10.labels.txt",
     "qml",
     "report_kit",
     "scripts",
@@ -109,6 +111,9 @@ $materialEntries = @(
     "docs\dataset_guide.md",
     "docs\developer_training.md",
     "docs\gui_preview.png",
+    "docs\model_report.md",
+    "docs\phase_b_baseline_results.md",
+    "docs\phase_c_results.md",
     "docs\release_guide.md",
     "models\gtsrb_semantic10_model_card.md"
 )
@@ -119,6 +124,15 @@ foreach ($entry in $materialEntries) {
     }
     Copy-Item -LiteralPath $source -Destination $materialsTarget -Force
 }
+
+$aiRecordSource = Join-Path (Split-Path -Parent $projectRoot) "docs\exports\codex_session_export.html"
+if (-not (Test-Path -LiteralPath $aiRecordSource -PathType Leaf)) {
+    throw "AI usage record is missing: $aiRecordSource"
+}
+Copy-Item `
+    -LiteralPath $aiRecordSource `
+    -Destination (Join-Path $materialsTarget "codex_session_export.html") `
+    -Force
 
 Get-ChildItem -LiteralPath $guideRoot -File |
     Copy-Item -Destination $packageRoot -Force
@@ -132,16 +146,18 @@ $manifest = @(
     "cppCNN Codex Report Kit v$Version",
     "",
     "Scope: codex/ pure C++ implementation only",
-    "Application model: GTSRB 10 classes",
-    "Application model test Top-1: 89.63%",
+    "Default application model: GTSRB subset, 10 classes",
+    "Optional full model: GTSRB Enhanced, 43 classes",
     "Dataset included: no",
-    "Pretrained application model included: yes",
+    "Pretrained application models included: yes",
+    "AI usage record included: report_materials/codex_session_export.html",
     "",
     "Top-level contents:",
-    "- application/: portable Windows GUI, runtime, model, labels and demos",
+    "- application/: portable Windows GUI, runtime, models, labels and demos",
     "- source/: buildable Codex C++ source without datasets or model binaries",
-    "- report_materials/: report, design, dataset, training and screenshot materials",
-    "- numbered Chinese guides: run, read code, write report and prepare defense"
+    "- report_materials/: report, design, dataset, training, screenshot and AI usage materials",
+    "- 01_宝宝级资料包指南.md: run, report and defense guide",
+    "- 02_代码阅读指南.md: code reading guide"
 )
 Set-Content `
     -LiteralPath (Join-Path $packageRoot "PACKAGE_MANIFEST.txt") `

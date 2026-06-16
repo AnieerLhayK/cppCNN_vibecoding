@@ -1,7 +1,7 @@
 ﻿cmake_minimum_required(VERSION 3.20)
 
 project(CppCNNTrafficSign
-    VERSION 1.1.0
+    VERSION 2.0.0
     DESCRIPTION "Pure C++ CNN traffic sign recognition course project"
     LANGUAGES CXX
 )

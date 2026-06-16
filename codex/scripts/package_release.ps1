@@ -3,7 +3,7 @@ param(
     [string]$ModelPath = "",
     [string]$QtRoot = "C:\Qt\6.11.1\msvc2022_64",
     [string]$LibTorchRoot = "D:\SDK\libtorch-2.12.0-cu130",
-    [string]$Version = "1.1.0",
+    [string]$Version = "2.0.0",
     [string]$ArtifactsDirectory = (Join-Path ([System.IO.Path]::GetTempPath()) "cppcnn-release-artifacts")
 )
 
@@ -50,10 +50,13 @@ if ($Version -notmatch '^\d+\.\d+\.\d+([-.][0-9A-Za-z.-]+)?$') {
 
 $demoImages = @(
     @{ Source = "test\00001\00284.ppm"; Destination = "01_speed_limit_30.ppm" },
-    @{ Source = "test\00007\00366.ppm"; Destination = "02_speed_limit_100.ppm" },
-    @{ Source = "test\00009\00497.ppm"; Destination = "03_no_passing.ppm" },
-    @{ Source = "test\00010\00084.ppm"; Destination = "04_heavy_vehicle_no_passing.ppm" },
-    @{ Source = "test\00011\00601.ppm"; Destination = "05_intersection_priority.ppm" }
+    @{ Source = "test\00002\00034.ppm"; Destination = "02_speed_limit_50.ppm" },
+    @{ Source = "test\00003\00023.ppm"; Destination = "03_speed_limit_60.ppm" },
+    @{ Source = "test\00005\00030.ppm"; Destination = "04_speed_limit_80.ppm" },
+    @{ Source = "test\00007\00366.ppm"; Destination = "05_speed_limit_100.ppm" },
+    @{ Source = "test\00009\00497.ppm"; Destination = "06_no_passing.ppm" },
+    @{ Source = "test\00010\00084.ppm"; Destination = "07_heavy_vehicle_no_passing.ppm" },
+    @{ Source = "test\00011\00601.ppm"; Destination = "08_intersection_priority.ppm" }
 )
 
 if (-not (Test-Path -LiteralPath $sourceDataset -PathType Container)) {
@@ -68,6 +71,19 @@ if ([string]::IsNullOrWhiteSpace($ModelPath)) {
 }
 if (-not (Test-Path -LiteralPath $ModelPath -PathType Leaf)) {
     throw "Trained model is missing: $ModelPath"
+}
+
+$full43Model = Join-Path $projectRoot "models\gtsrb_v5_full43.bin"
+$full43Labels = Join-Path $projectRoot "models\gtsrb_v5_full43.labels.txt"
+if (-not (Test-Path -LiteralPath $full43Model -PathType Leaf)) {
+    throw "Full 43-class model is missing: $full43Model"
+}
+if (-not (Test-Path -LiteralPath $full43Labels -PathType Leaf)) {
+    throw "Full 43-class labels are missing: $full43Labels"
+}
+$aiRecordSource = Join-Path (Split-Path -Parent $projectRoot) "docs\exports\codex_session_export.html"
+if (-not (Test-Path -LiteralPath $aiRecordSource -PathType Leaf)) {
+    throw "AI usage record is missing: $aiRecordSource"
 }
 
 $buildFull = [System.IO.Path]::GetFullPath($BuildDirectory)
@@ -151,24 +167,14 @@ Copy-Item `
     -Force
 
 # Also include the full 43-class model for manual Ctrl+M loading.
-$full43Model = Join-Path $projectRoot "models\gtsrb_v5_full43.bin"
-$full43Labels = Join-Path $projectRoot "models\gtsrb_v5_full43.labels.txt"
-if (Test-Path -LiteralPath $full43Model -PathType Leaf) {
-    Copy-Item -LiteralPath $full43Model -Destination (Join-Path $packageRoot "models\gtsrb_v5_full43.bin") -Force
-}
-if (Test-Path -LiteralPath $full43Labels -PathType Leaf) {
-    Copy-Item -LiteralPath $full43Labels -Destination (Join-Path $packageRoot "models\gtsrb_v5_full43.labels.txt") -Force
-}
+Copy-Item -LiteralPath $full43Model -Destination (Join-Path $packageRoot "models\gtsrb_v5_full43.bin") -Force
+Copy-Item -LiteralPath $full43Labels -Destination (Join-Path $packageRoot "models\gtsrb_v5_full43.labels.txt") -Force
 
-# Include the GPU-accelerated CLI if pre-built.
-$gpuAppSource = Join-Path $projectRoot "build_libtorch\cppcnn_app_gpu.exe"
-if (Test-Path -LiteralPath $gpuAppSource -PathType Leaf) {
-    Write-Host "GPU executable found; including in package."
-    Copy-Item -LiteralPath $gpuAppSource -Destination (Join-Path $packageRoot "cppcnn_app_gpu.exe") -Force
-
-    # LibTorch/CUDA runtime DLLs are not bundled.
-    # To run the GPU CLI, ensure D:\SDK\libtorch-2.12.0-cu130\bin is on PATH.
-}
+New-Item -ItemType Directory -Force -Path (Join-Path $packageRoot "ai_records") | Out-Null
+Copy-Item `
+    -LiteralPath $aiRecordSource `
+    -Destination (Join-Path $packageRoot "ai_records\codex_session_export.html") `
+    -Force
 
 $deliveryFiles = @(
     "README.md",
@@ -195,12 +201,18 @@ Set-Content `
     -Value "cppCNN Traffic Sign Studio $Version`r`nWindows x64 portable release"
 
 New-Item -ItemType Directory -Force -Path $releaseRoot | Out-Null
-$generatedDirectories = @("bin", "generic", "iconengines", "imageformats", "networkinformation", "platforms", "plugins", "qml", "styles", "tls", "translations")
-foreach ($directory in $generatedDirectories) {
-    $generatedPath = Join-Path $releaseRoot $directory
-    if (Test-Path -LiteralPath $generatedPath) {
-        Remove-Item -LiteralPath $generatedPath -Recurse -Force
-    }
+$releaseFull = [System.IO.Path]::GetFullPath($releaseRoot)
+$projectFull = [System.IO.Path]::GetFullPath($projectRoot)
+if (-not $releaseFull.StartsWith(
+        $projectFull + [System.IO.Path]::DirectorySeparatorChar,
+        [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "Refusing to clean a release directory outside the project: $releaseFull"
+}
+Get-ChildItem -LiteralPath $releaseRoot -Force |
+    Remove-Item -Recurse -Force
+
+foreach ($directory in @("models", "demo_images", "ai_records")) {
+    New-Item -ItemType Directory -Force -Path (Join-Path $releaseRoot $directory) | Out-Null
 }
 Copy-Item -Path (Join-Path $packageRoot "*") -Destination $releaseRoot -Recurse -Force
 

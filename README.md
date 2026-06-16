@@ -4,7 +4,7 @@
 
 | 目录 | 技术路线 | 定位 | 状态 |
 | --- | --- | --- | --- |
-| [`codex/`](codex/) | C++17、手写 CNN、Qt Quick | 课程主交付：GTSRB 交通标志识别 | `v1.1.0`，可训练、评估、推理和直接演示 |
+| [`codex/`](codex/) | C++17、手写 CNN、Qt Quick | 课程主交付：GTSRB 交通标志识别 | `v2.0.0`，含 10 类演示模型与 43 类 Enhanced 模型 |
 | [`claude/`](claude/) | Python、PyTorch、控制台 | 对照原型：车标分类 | 源码与 23 项单元测试完整，尚无数据集和训练权重 |
 
 ## 当前发布
@@ -15,10 +15,10 @@
 - [Codex 项目报告](codex/docs/project_report.md)
 - [版本变化](codex/CHANGELOG.md)
 
-GitHub Release 的 Windows x64 ZIP 是 `codex/` 主实现的教师演示包，包含可执行程序、Qt 运行库、训练好的 10 类模型、标签和多类别演示图片。`claude/` 随源码标签发布，不提供预训练权重或独立可执行包。
+GitHub Release 的 Windows x64 ZIP 是 `codex/` 主实现的教师演示包，包含可执行程序、Qt 运行库、默认 10 类模型、完整 43 类 Enhanced 模型、标签、多类别演示图片和 AI 使用记录。`claude/` 随源码标签发布，不提供预训练权重或独立可执行包。
 
-不会使用 Git 或开发工具的报告协作者，可以在 `v1.1.0` Release 下载
-`cppCNN-Codex-Report-Kit-v1.1.0.zip`。该资料包只包含 Codex 版本，内含可运行程序、完整课程源码、报告材料和中文入门指南。
+不会使用 Git 或开发工具的报告协作者，可以在最新 Release 下载
+`cppCNN-Codex-Report-Kit-v2.0.0.zip`。该资料包只包含 Codex 版本，内含可运行程序、完整课程源码、报告材料、AI 使用记录和中文入门指南。
 
 ## 仓库约定
 
