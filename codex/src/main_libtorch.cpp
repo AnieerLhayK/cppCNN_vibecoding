@@ -1,4 +1,4 @@
-ï»¿/// cppcnn_app_gpu â€” LibTorch GPU-accelerated CLI for GTSRB training.
+/// cppcnn_app_gpu ¡ª LibTorch GPU-accelerated CLI for GTSRB training.
 ///
 /// Usage:
 ///   train <dataset_dir> <model_out.pt> [options]
@@ -16,8 +16,10 @@
 ///   --val F            Validation ratio (default: 0.2)
 ///   --seed N           Random seed (default: 42)
 ///   --aug              Enable data augmentation
+///   --aug              Enable data augmentation
 ///   --balance          Enable class balancing
-///   --no-cuda          Disable CUDA (force CPU)
+///   --lr-decay F       LR decay factor for StepLR (default: 0.1)
+///   --lr-step N        StepLR step size in epochs (default: 30)
 ///   --verbose          Print detailed progress
 ///   --help             Show this message
 
@@ -106,7 +108,7 @@ static Args parseArgs(int argc, char* argv[]) {
 }
 
 static void printUsage() {
-    std::cout << "cppcnn_app_gpu â€” GPU-accelerated GTSRB training\n"
+    std::cout << "cppcnn_app_gpu ¡ª GPU-accelerated GTSRB training\n"
               << "\n"
               << "Usage:\n"
               << "  train <dataset_dir> <model_out.pt> [options]\n"
@@ -125,11 +127,12 @@ static void printUsage() {
               << "  --seed N           Random seed (default: 42)\n"
               << "  --aug              Enable data augmentation\n"
               << "  --balance          Enable class balancing\n"
+              << "  --lr-decay F       LR decay factor for StepLR (default: 0.1)\n"
+              << "  --lr-step N        StepLR step size in epochs (default: 30)\n"
               << "  --no-cuda          Disable CUDA (force CPU)\n"
               << "  --verbose          Print detailed progress\n"
               << "  --help             Show this message\n";
 }
-
 // ============================================================================
 // CUDA device setup
 // ============================================================================
@@ -182,6 +185,8 @@ static int cmdTrain(const Args& args) {
     double lr         = args.getDouble("lr", 0.01);
     double wd         = args.getDouble("wd", 0.0001);
     double momentum   = args.getDouble("momentum", 0.9);
+    double lrDecay     = args.getDouble("lr-decay", 0.1);
+    int lrStep         = args.getInt("lr-step", 30);
     float valRatio    = args.getFloat("val", 0.2F);
     bool useAug       = args.has("aug");
     bool useBalance   = args.has("balance");
@@ -275,6 +280,9 @@ static int cmdTrain(const Args& args) {
     opts.enableClassBalancing = useBalance;
     opts.checkpointPath = args.get("checkpoint", "");
     opts.csvPath = args.get("csv", "");
+    opts.enableLrScheduler = lrDecay < 1.0;
+    opts.lrDecayFactor = lrDecay;
+    opts.lrStepSize = static_cast<std::size_t>(lrStep);
     opts.useCuda = useCuda;
     opts.verbose = true;
     opts.seed = static_cast<std::uint32_t>(seed);

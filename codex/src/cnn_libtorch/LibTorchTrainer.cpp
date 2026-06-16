@@ -1,4 +1,4 @@
-ï»¿#include "LibTorchTrainer.h"
+#include "LibTorchTrainer.h"
 #include "GTSRBDataset.h"
 
 #include <torch/torch.h>
@@ -55,8 +55,8 @@ std::vector<size_t> balancedIdx(const std::vector<TrainSample>& samples, int64_t
 // ---------------------------------------------------------------------------
 // Batch data augmentation using LibTorch ops.
 // Images: (B, C, H, W) float tensor in [0, 1].
-// Applies: rotation Â±15 deg, translation Â±4 px, scaling Â±10%,
-// brightness Â±0.2, contrast factor 0.8-1.2, Gaussian noise Ïƒ=0.05.
+// Applies: rotation ¡À15 deg, translation ¡À4 px, scaling ¡À10%,
+// brightness ¡À0.2, contrast factor 0.8-1.2, Gaussian noise ¦Ò=0.05.
 // ---------------------------------------------------------------------------
 torch::Tensor augmentBatch(torch::Tensor images, std::mt19937& rng) {
     auto B = images.size(0);
@@ -91,7 +91,7 @@ torch::Tensor augmentBatch(torch::Tensor images, std::mt19937& rng) {
     auto result = torch::stack(warped);
 
     // --- Photometric transforms (batch) ---
-    // Brightness Â±0.2 per sample
+    // Brightness ¡À0.2 per sample
     auto bright = torch::zeros({B, 1, 1, 1}, torch::kFloat32).to(device);
     for (int64_t i = 0; i < B; ++i) bright[i][0][0][0] = ud(rng) * 0.2f;
     result = result + bright;
@@ -129,6 +129,7 @@ LibTorchTrainingReport trainLibTorchModel(
 
     auto params = model.parameters();
     torch::optim::SGD opt(params, torch::optim::SGDOptions(opts.learningRate).momentum(opts.momentum).weight_decay(opts.weightDecay));
+    double currentLr = opts.learningRate;
     auto crit = torch::nn::CrossEntropyLoss();
     std::mt19937 rng(opts.seed);
 
@@ -215,9 +216,23 @@ LibTorchTrainingReport trainLibTorchModel(
             }
         }
 
+        // StepLR: decay learning rate every lrStepSize epochs
+        if (opts.enableLrScheduler && opts.lrStepSize > 0) {
+            if ((ep + 1) % opts.lrStepSize == 0) {
+                double newLr = std::max(currentLr * opts.lrDecayFactor, opts.minLr);
+                if (newLr < currentLr) {
+                    for (auto& group : opt.param_groups()) {
+                        auto& sgdOpts = static_cast<torch::optim::SGDOptions&>(group.options());
+                        sgdOpts.lr(newLr);
+                    }
+                    currentLr = newLr;
+                }
+            }
+        }
+
         LibTorchEpochMetrics m;
         m.epoch=ep; m.trainLoss=trainLoss; m.trainAccuracy=trainAcc; m.valLoss=avgValLoss; m.valAccuracy=avgValAcc;
-        m.meanClassAccuracy=meanClass; m.minClassAccuracy=minClass; m.durationSec=epSec; m.currentLr=opts.learningRate;
+        m.meanClassAccuracy=meanClass; m.minClassAccuracy=minClass; m.durationSec=epSec; m.currentLr=currentLr;
         report.history.push_back(m);
         if (opts.verbose) std::cout<<"Epoch "<<(ep+1)<<"/"<<opts.epochs
             <<" | train loss: "<<std::fixed<<std::setprecision(4)<<trainLoss<<" acc: "<<std::setprecision(2)<<(trainAcc*100)<<"%"

@@ -64,3 +64,9 @@ Thumbs.db
 /Release/styles/
 /Release/tls/
 /Release/translations/
+
+# GPU LibTorch build
+build_libtorch/
+
+# GPU LibTorch build
+build_libtorch/

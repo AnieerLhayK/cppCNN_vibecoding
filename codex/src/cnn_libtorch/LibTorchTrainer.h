@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "LibTorchModel.h"
 
@@ -49,6 +49,12 @@ struct LibTorchTrainingOptions {
     std::uint32_t seed = 42;
     std::string checkpointPath;   ///< Path to save best model checkpoint (empty = skip)
     std::string csvPath;          ///< Path for CSV epoch history (empty = skip)
+	// LR scheduler (StepLR)
+	bool enableLrScheduler = false;
+	double lrDecayFactor = 0.1;
+	std::size_t lrStepSize = 30;
+	double minLr = 1.0e-6;
+	std::size_t warmupEpochs = 0;
 };
 
 // ---------------------------------------------------------------------------
