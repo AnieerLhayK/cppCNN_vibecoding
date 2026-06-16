@@ -30,7 +30,7 @@ cppcnn_gui.exe
 Release/
 ├── cppcnn_gui.exe          # Qt 桌面界面
 ├── cppcnn_app.exe          # CLI 训练与推理程序
-├── cppcnn_app_gpu.exe      # CLI GPU 加速版 (附带 LibTorch/CUDA DLL)
+├── cppcnn_app_gpu.exe      # CLI GPU 加速版 (需 SDK bin 目录在 PATH 中)
 ├── Qt6*.dll                # Qt 运行库，本地生成且不入 Git
 ├── plugins/                # Qt 平台与图片插件
 ├── qml/                    # Qt Quick 运行模块

@@ -228,6 +228,7 @@ ApplicationWindow {
                             id: modelCombo
                             Layout.preferredWidth: 300
                             Layout.maximumWidth: 360
+                            leftPadding: 10
                             model: appController.availableModels
                             textRole: "name"
                             valueRole: "path"
@@ -242,8 +243,8 @@ ApplicationWindow {
 
                             delegate: ItemDelegate {
                                 width: modelCombo.width
+                                leftPadding: 10
                                 contentItem: Column {
-                                    leftPadding: 10
                                     spacing: 1
                                     Label {
                                         text: modelData.name || ""
@@ -264,7 +265,6 @@ ApplicationWindow {
 
                             contentItem: RowLayout {
                                 spacing: 6
-                                leftPadding: 10
                                 Label {
                                     text: modelCombo.currentText || "No .bin models found"
                                     color: modelCombo.currentText ? "#F3F6FD" : "#6F7F9B"

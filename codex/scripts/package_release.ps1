@@ -166,15 +166,8 @@ if (Test-Path -LiteralPath $gpuAppSource -PathType Leaf) {
     Write-Host "GPU executable found; including in package."
     Copy-Item -LiteralPath $gpuAppSource -Destination (Join-Path $packageRoot "cppcnn_app_gpu.exe") -Force
 
-    # Deploy LibTorch / CUDA runtime DLLs alongside the GPU executable.
-    $libTorchBin = Join-Path $LibTorchRoot "bin"
-    if (Test-Path -LiteralPath $libTorchBin -PathType Container) {
-        Write-Host "Deploying LibTorch/CUDA runtime DLLs from $libTorchBin"
-        Copy-Item -Path (Join-Path $libTorchBin "*.dll") -Destination $packageRoot -Force
-    }
-    else {
-        Write-Warning "LibTorch root not found at '$LibTorchRoot' — GPU executable will not run without its runtime DLLs."
-    }
+    # LibTorch/CUDA runtime DLLs are not bundled.
+    # To run the GPU CLI, ensure D:\SDK\libtorch-2.12.0-cu130\bin is on PATH.
 }
 
 $deliveryFiles = @(

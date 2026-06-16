@@ -95,6 +95,12 @@ cmake -S codex -B codex/build `
 
 cmake --build codex/build --config Release
 ctest --test-dir codex/build -C Release --output-on-failure
+
+编译完成后可清理中间产物（约 109 MB 的 `.obj`、CMake 缓存等）：
+
+```powershell
+Remove-Item -Recurse -Force codex/build
+```
 ```
 
 没有 Qt 时，CMake 会跳过 `cppcnn_gui`，CLI 和核心测试仍可构建。也可以显式设置 `-DCPPCNN_BUILD_GUI=OFF`。
@@ -241,6 +247,8 @@ cmake --build build_libtorch --config Release
 
 完成后双击 [`Release/run_demo.bat`](Release/run_demo.bat)。脚本还会在临时目录生成版本化 ZIP 和 `.sha256` 校验文件。发布包包含 GUI、CLI、Qt DLL、QML 模块、插件、模型、标签和演示图。
 
+> **注意**：LibTorch/CUDA 运行库不再随发布包分发。`cppcnn_app_gpu.exe` 需要在 `PATH` 中包含 `D:\SDK\libtorch-2.12.0-cu130\bin` 才能运行。Qt GUI 和 CPU CLI 无需此配置。
+
 Qt 运行库和模型由脚本生成但不提交 Git；`cppcnn_gui.exe`、启动脚本和说明文件被跟踪。
 
 生成 Codex-only 课程报告资料包：
@@ -284,7 +292,7 @@ codex/
 - 高级训练使用 Momentum SGD；目前仍不含 Adam 或 BatchNorm。
 - GUI 主要面向推理演示，训练仍通过 CLI 完成。
 - Git 仓库不包含 GTSRB 和模型权重；需下载、训练或使用本地 Release 包。
-- Qt 官方部署会产生约 86 MiB 的本地便携目录。
+- Qt 官方部署会产生约 102 MiB 的本地便携目录。
 
 ## 后续改进
 
