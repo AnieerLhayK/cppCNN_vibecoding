@@ -1,2 +1,5 @@
 # Root build directory (alternative -B build invocation)
 build/
+
+# VSCode workspace files (personal per-user configuration)
+*.code-workspace
