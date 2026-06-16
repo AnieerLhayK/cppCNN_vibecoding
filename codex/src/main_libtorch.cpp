@@ -1,4 +1,4 @@
-/// cppcnn_app_gpu ¡ª LibTorch GPU-accelerated CLI for GTSRB training.
+/// cppcnn_app_gpu â€” LibTorch GPU-accelerated CLI for GTSRB training.
 ///
 /// Usage:
 ///   train <dataset_dir> <model_out.pt> [options]
@@ -30,8 +30,10 @@
 
 #include <torch/torch.h>
 
+#include <array>
 #include <chrono>
 #include <cstddef>
+#include <fstream>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
@@ -108,7 +110,7 @@ static Args parseArgs(int argc, char* argv[]) {
 }
 
 static void printUsage() {
-    std::cout << "cppcnn_app_gpu ¡ª GPU-accelerated GTSRB training\n"
+    std::cout << "cppcnn_app_gpu â€” GPU-accelerated GTSRB training\n"
               << "\n"
               << "Usage:\n"
               << "  train <dataset_dir> <model_out.pt> [options]\n"
@@ -131,6 +133,7 @@ static void printUsage() {
               << "  --lr-step N        StepLR step size in epochs (default: 30)\n"
               << "  --no-cuda          Disable CUDA (force CPU)\n"
               << "  --verbose          Print detailed progress\n"
+              << "  export <input.pt> <output.bin>   Export .pt model to .bin for GUI\n"
               << "  --help             Show this message\n";
 }
 // ============================================================================
@@ -433,6 +436,118 @@ static int cmdPredict(const Args& args) {
 }
 
 // ============================================================================
+// Export: .pt -> .bin for GUI
+// ============================================================================
+
+static int cmdExport(const Args& args) {
+    if (args.positional.size() < 2) {
+        std::cerr << "Usage: export <input.pt> <output.bin> [options]\n";
+        return 1;
+    }
+
+    std::filesystem::path inputPath = args.positional[0];
+    std::filesystem::path outputPath = args.positional[1];
+
+    int numClasses = args.getInt("classes", 43);
+    std::string archStr = args.get("arch", "Enhanced");
+
+    cppcnn::LibTorchArchitecture arch;
+    if (archStr == "LeNet" || archStr == "lenet") {
+        arch = cppcnn::LibTorchArchitecture::LeNet;
+    } else {
+        arch = cppcnn::LibTorchArchitecture::Enhanced;
+    }
+
+    std::cout << "=== Export .pt to .bin ===" << "\n"
+              << "Input:   " << inputPath << "\n"
+              << "Output:  " << outputPath << "\n"
+              << "Arch:    " << archStr << "\n"
+              << "Classes: " << numClasses << "\n"
+              << std::endl;
+
+    std::shared_ptr<cppcnn::LibTorchModule> model;
+    if (arch == cppcnn::LibTorchArchitecture::LeNet) {
+        auto m = std::make_shared<cppcnn::LibTorchLeNetImpl>(numClasses);
+        m->loadFromFile(inputPath.string());
+        model = m;
+    } else {
+        auto m = std::make_shared<cppcnn::LibTorchEnhancedImpl>(numClasses);
+        m->loadFromFile(inputPath.string());
+        model = m;
+    }
+    model->eval();
+    model->to(torch::kCPU);
+
+    auto params = model->named_parameters();
+
+    struct LayerDef { uint32_t type; std::string w; std::string b; };
+    std::vector<LayerDef> layers;
+
+    if (arch == cppcnn::LibTorchArchitecture::LeNet) {
+        layers = {{1, "conv1.weight", "conv1.bias"},
+                  {1, "conv2.weight", "conv2.bias"},
+                  {2, "fc1.weight",   "fc1.bias"},
+                  {2, "fc2.weight",   "fc2.bias"}};
+    } else {
+        layers = {{1, "conv1.weight", "conv1.bias"},
+                  {1, "conv2.weight", "conv2.bias"},
+                  {1, "conv3.weight", "conv3.bias"},
+                  {2, "fc1.weight",   "fc1.bias"},
+                  {2, "fc2.weight",   "fc2.bias"},
+                  {2, "fc3.weight",   "fc3.bias"}};
+    }
+
+    std::ofstream out(outputPath, std::ios::binary);
+    if (!out) {
+        std::cerr << "Error: could not create output file: " << outputPath << std::endl;
+        return 1;
+    }
+
+    constexpr std::array<char, 8> magic = {'C', 'P', 'P', 'C', 'N', 'N', '1', '\0'};
+    out.write(magic.data(), static_cast<std::streamsize>(magic.size()));
+
+    auto writeU32 = [&](uint32_t v) { out.write(reinterpret_cast<const char*>(&v), sizeof(v)); };
+    auto writeU64 = [&](uint64_t v) { out.write(reinterpret_cast<const char*>(&v), sizeof(v)); };
+    auto writeFloats = [&](const float* data, uint64_t count) {
+        out.write(reinterpret_cast<const char*>(data),
+                  static_cast<std::streamsize>(count * sizeof(float)));
+    };
+
+    writeU32(2);
+    writeU64(static_cast<uint64_t>(numClasses));
+    writeU32(arch == cppcnn::LibTorchArchitecture::Enhanced ? 1u : 0u);
+    writeU32(static_cast<uint32_t>(layers.size()));
+
+    for (size_t i = 0; i < layers.size(); ++i) {
+        auto w = params[layers[i].w].contiguous();
+        auto b = params[layers[i].b].contiguous();
+        uint64_t wc = static_cast<uint64_t>(w.numel());
+        uint64_t bc = static_cast<uint64_t>(b.numel());
+
+        writeU32(layers[i].type);
+        writeU64(wc);
+        writeFloats(w.data_ptr<float>(), wc);
+        writeU64(bc);
+        writeFloats(b.data_ptr<float>(), bc);
+
+        std::cout << "  Layer " << (i + 1) << ": "
+                  << (layers[i].type == 1 ? "Conv" : "FC")
+                  << " weights=" << wc << " biases=" << bc << std::endl;
+    }
+
+    out.close();
+    if (!out) {
+        std::cerr << "Error: failed to write output file." << std::endl;
+        return 1;
+    }
+
+    auto fileSize = static_cast<double>(std::filesystem::file_size(outputPath));
+    std::cout << "Export complete: " << outputPath
+              << " (" << (fileSize / (1024.0 * 1024.0)) << " MB)" << std::endl;
+    return 0;
+}
+
+// ============================================================================
 // main
 // ============================================================================
 
@@ -502,6 +617,8 @@ int main(int argc, char* argv[]) {
             return cmdEvaluate(args);
         } else if (args.command == "cuda-test") {
             return cmdCudaTest();
+        } else if (args.command == "export") {
+            return cmdExport(args);
         } else if (args.command == "predict") {
             return cmdPredict(args);
         } else {
