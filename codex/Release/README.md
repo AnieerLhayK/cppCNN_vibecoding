@@ -36,7 +36,7 @@ Release/
 ├── models/
 │   ├── gtsrb_v2_subset10.bin  # 默认 10 类模型
 │   └── gtsrb_v5_full43.bin    # 完整 43 类模型 (Ctrl+M 加载)
-├── demo_images/            # 八张 GTSRB 演示图片
+├── demo_images/            # 50 张 GTSRB 演示图片
 ├── ai_records/
 │   └── codex_session_export.html # AI 使用记录
 ├── labels.txt              # 10 类标签

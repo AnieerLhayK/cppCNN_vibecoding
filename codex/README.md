@@ -247,7 +247,7 @@ cmake --build build_libtorch --config Release
   -Version 2.0.0
 ```
 
-完成后双击 [`Release/run_demo.bat`](Release/run_demo.bat)。脚本还会在临时目录生成版本化 ZIP 和 `.sha256` 校验文件。发布包包含 GUI、CLI、Qt DLL、QML 模块、插件、模型、标签和演示图。
+完成后双击 [`Release/run_demo.bat`](Release/run_demo.bat)。脚本还会在临时目录生成版本化 ZIP 和 `.sha256` 校验文件。发布包包含 GUI、CLI、Qt DLL、QML 模块、插件、模型、标签和 50 张演示图。
 
 > **注意**：教师便携包默认不包含 GPU 训练可执行程序和 LibTorch/CUDA 运行库。需要继续训练时，请按上文 GPU 训练章节在开发环境中单独构建 `cppcnn_app_gpu.exe`。Qt GUI 和 CPU CLI 无需此配置。
 

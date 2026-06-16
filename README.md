@@ -15,7 +15,7 @@
 - [Codex 项目报告](codex/docs/project_report.md)
 - [版本变化](codex/CHANGELOG.md)
 
-GitHub Release 的 Windows x64 ZIP 是 `codex/` 主实现的教师演示包，包含可执行程序、Qt 运行库、默认 10 类模型、完整 43 类 Enhanced 模型、标签、多类别演示图片和 AI 使用记录。`claude/` 随源码标签发布，不提供预训练权重或独立可执行包。
+GitHub Release 的 Windows x64 ZIP 是 `codex/` 主实现的教师演示包，包含可执行程序、Qt 运行库、默认 10 类模型、完整 43 类 Enhanced 模型、标签、50 张多类别演示图片和 AI 使用记录。`claude/` 随源码标签发布，不提供预训练权重或独立可执行包。
 
 不会使用 Git 或开发工具的报告协作者，可以在最新 Release 下载
 `cppCNN-Codex-Report-Kit-v2.0.0.zip`。该资料包只包含 Codex 版本，内含可运行程序、完整课程源码、报告材料、AI 使用记录和中文入门指南。

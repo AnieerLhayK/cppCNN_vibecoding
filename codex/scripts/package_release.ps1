@@ -37,7 +37,12 @@ function Invoke-NativeStep {
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $releaseRoot = Join-Path $projectRoot "Release"
-$sourceDataset = Join-Path $projectRoot "datasets\GTSRB_subset"
+$sourceDatasetCandidates = @(
+    (Join-Path $projectRoot "datasets\GTSRB_subset"),
+    (Join-Path $projectRoot "datasets\GTSRB"),
+    (Join-Path (Join-Path $projectRoot "datasets\GTSRB_subset") "GTSRB"),
+    (Join-Path (Join-Path $projectRoot "datasets\GTSRB") "GTSRB")
+)
 $packageRoot = Join-Path $BuildDirectory "portable"
 $artifactName = "cppCNN-Traffic-Sign-Studio-v$Version-windows-x64"
 $artifactPackageRoot = Join-Path $ArtifactsDirectory $artifactName
@@ -48,23 +53,64 @@ if ($Version -notmatch '^\d+\.\d+\.\d+([-.][0-9A-Za-z.-]+)?$') {
     throw "Version must use a release form such as 1.0.0 or 1.0.0-rc1: $Version"
 }
 
-$demoImages = @(
-    @{ Source = "test\00001\00284.ppm"; Destination = "01_speed_limit_30.ppm" },
-    @{ Source = "test\00002\00034.ppm"; Destination = "02_speed_limit_50.ppm" },
-    @{ Source = "test\00003\00023.ppm"; Destination = "03_speed_limit_60.ppm" },
-    @{ Source = "test\00005\00030.ppm"; Destination = "04_speed_limit_80.ppm" },
-    @{ Source = "test\00007\00366.ppm"; Destination = "05_speed_limit_100.ppm" },
-    @{ Source = "test\00009\00497.ppm"; Destination = "06_no_passing.ppm" },
-    @{ Source = "test\00010\00084.ppm"; Destination = "07_heavy_vehicle_no_passing.ppm" },
-    @{ Source = "test\00011\00601.ppm"; Destination = "08_intersection_priority.ppm" }
-)
+function Get-DemoImageEntries {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Root
+    )
 
-if (-not (Test-Path -LiteralPath $sourceDataset -PathType Container)) {
-    throw "Development dataset is missing: $sourceDataset"
+    $entries = New-Object System.Collections.Generic.List[object]
+    $trainingRoot = Join-Path $Root "Final_Training\Images"
+    $classDirs = Get-ChildItem -LiteralPath $trainingRoot -Directory | Sort-Object Name
+
+    foreach ($classDir in $classDirs) {
+        $images = Get-ChildItem -LiteralPath $classDir.FullName -File -Filter *.ppm | Sort-Object Name
+        if ($images.Count -gt 0) {
+            $entries.Add([pscustomobject]@{
+                Source      = "Final_Training\Images\$($classDir.Name)\$($images[0].Name)"
+                Destination = ("{0:D2}_class_{1}_{2}.ppm" -f ($entries.Count + 1), $classDir.Name, $images[0].BaseName)
+            })
+        }
+    }
+
+    foreach ($classDir in $classDirs) {
+        if ($entries.Count -ge 50) {
+            break
+        }
+
+        $images = Get-ChildItem -LiteralPath $classDir.FullName -File -Filter *.ppm | Sort-Object Name
+        if ($images.Count -gt 1) {
+            $entries.Add([pscustomobject]@{
+                Source      = "Final_Training\Images\$($classDir.Name)\$($images[1].Name)"
+                Destination = ("{0:D2}_class_{1}_{2}.ppm" -f ($entries.Count + 1), $classDir.Name, $images[1].BaseName)
+            })
+        }
+    }
+
+    if ($entries.Count -lt 50) {
+        throw "Unable to collect 50 demo images from $trainingRoot. Collected only $($entries.Count)."
+    }
+
+    return $entries | Select-Object -First 50
 }
+
 if (-not (Test-Path -LiteralPath (Join-Path $QtRoot "bin\windeployqt.exe") -PathType Leaf)) {
     throw "Qt 6 MSVC deployment tools were not found under: $QtRoot"
 }
+
+$sourceDataset = $null
+foreach ($candidate in $sourceDatasetCandidates) {
+    if (Test-Path -LiteralPath (Join-Path $candidate "Final_Training\Images") -PathType Container) {
+        $sourceDataset = $candidate
+        break
+    }
+}
+
+if ($null -eq $sourceDataset) {
+    throw "Development dataset is missing: expected Final_Training\Images under one of these roots: $($sourceDatasetCandidates -join ', ')"
+}
+
+$demoImages = Get-DemoImageEntries -Root $sourceDataset
 
 if ([string]::IsNullOrWhiteSpace($ModelPath)) {
     $ModelPath = Join-Path $projectRoot "models\gtsrb_v2_subset10.bin"
@@ -145,20 +191,28 @@ if (Test-Path -LiteralPath $qmlToolingPath -PathType Container) {
 New-Item -ItemType Directory -Force -Path (Join-Path $packageRoot "demo_images") | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $packageRoot "models") | Out-Null
 
-Copy-Item `
-    -LiteralPath (Join-Path $sourceDataset "labels.txt") `
-    -Destination (Join-Path $packageRoot "labels.txt") `
-    -Force
+$labelsSourceCandidates = @(
+    (Join-Path $sourceDataset "labels.txt"),
+    (Join-Path $releaseRoot "labels.txt")
+)
+$labelsSource = $null
+foreach ($candidate in $labelsSourceCandidates) {
+    if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+        $labelsSource = $candidate
+        break
+    }
+}
+if ($null -eq $labelsSource) {
+    throw "Labels file is missing from dataset and release root."
+}
+Copy-Item -LiteralPath $labelsSource -Destination (Join-Path $packageRoot "labels.txt") -Force
 
 foreach ($image in $demoImages) {
     $source = Join-Path $sourceDataset $image.Source
     if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
         throw "Demo image is missing: $source"
     }
-    Copy-Item `
-        -LiteralPath $source `
-        -Destination (Join-Path $packageRoot "demo_images\$($image.Destination)") `
-        -Force
+    Copy-Item -LiteralPath $source -Destination (Join-Path $packageRoot "demo_images\$($image.Destination)") -Force
 }
 
 Copy-Item `
