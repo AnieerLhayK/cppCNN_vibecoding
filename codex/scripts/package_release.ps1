@@ -2,6 +2,7 @@ param(
     [string]$BuildDirectory = (Join-Path ([System.IO.Path]::GetTempPath()) "cppcnn-release-build"),
     [string]$ModelPath = "",
     [string]$QtRoot = "C:\Qt\6.11.1\msvc2022_64",
+    [string]$LibTorchRoot = "D:\SDK\libtorch-2.12.0-cu130",
     [string]$Version = "1.1.0",
     [string]$ArtifactsDirectory = (Join-Path ([System.IO.Path]::GetTempPath()) "cppcnn-release-artifacts")
 )
@@ -164,6 +165,16 @@ $gpuAppSource = Join-Path $projectRoot "build_libtorch\cppcnn_app_gpu.exe"
 if (Test-Path -LiteralPath $gpuAppSource -PathType Leaf) {
     Write-Host "GPU executable found; including in package."
     Copy-Item -LiteralPath $gpuAppSource -Destination (Join-Path $packageRoot "cppcnn_app_gpu.exe") -Force
+
+    # Deploy LibTorch / CUDA runtime DLLs alongside the GPU executable.
+    $libTorchBin = Join-Path $LibTorchRoot "bin"
+    if (Test-Path -LiteralPath $libTorchBin -PathType Container) {
+        Write-Host "Deploying LibTorch/CUDA runtime DLLs from $libTorchBin"
+        Copy-Item -Path (Join-Path $libTorchBin "*.dll") -Destination $packageRoot -Force
+    }
+    else {
+        Write-Warning "LibTorch root not found at '$LibTorchRoot' — GPU executable will not run without its runtime DLLs."
+    }
 }
 
 $deliveryFiles = @(
