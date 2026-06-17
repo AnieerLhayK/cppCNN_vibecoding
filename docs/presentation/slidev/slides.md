@@ -78,7 +78,7 @@ transition: slide-left
 
 ```mermaid
 %%{init: {'flowchart': {'useMaxWidth': false}}}%%
-flowchart LR
+flowchart TD
   subgraph row1[" "]
     direction LR
     A[启动] --> B[GUI 启动] --> C[拖入图片]
