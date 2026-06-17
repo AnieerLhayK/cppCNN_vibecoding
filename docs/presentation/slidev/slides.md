@@ -78,11 +78,11 @@ transition: slide-left
 
 ```mermaid
 %%{init: {'flowchart': {'useMaxWidth': false}}}%%
-graph TD
-  A[run_demo.bat] --> B[Qt GUI 启动]
-  B --> C[打开或拖入图片]
-  C --> D[点击 Recognize]
-  D --> E[Top-1 类别 + 置信度]
+graph LR
+  A[启动] --> B[GUI 启动]
+  B --> C[拖入图片]
+  C --> D[点击识别]
+  D --> E[Top-1 类别]
   E --> F[Top-3 概率条]
   style A fill:#4a3f8a,stroke:#6b5fcc,color:#fff
   style B fill:#2a3a55,stroke:#4a5a7f,color:#fff
@@ -92,10 +92,11 @@ graph TD
   style F fill:#1a6b3a,stroke:#2a8b5a,color:#fff
 ```
 
+> 💡 演示时双击 `run_demo.bat` 即可启动，程序会自动加载测试图片
+
 <style>
 .mermaid svg {
-  transform: scale(1.3);
-  transform-origin: top center;
+  transform: scale(1.2);
 }
 </style>
 
