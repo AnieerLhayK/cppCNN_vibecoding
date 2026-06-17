@@ -77,7 +77,8 @@ transition: slide-left
 现场展示：从启动到识别
 
 ```mermaid
-graph LR
+%%{init: {'flowchart': {'useMaxWidth': false}}}%%
+graph TD
   A[run_demo.bat] --> B[Qt GUI 启动]
   B --> C[打开或拖入图片]
   C --> D[点击 Recognize]
@@ -91,15 +92,10 @@ graph LR
   style F fill:#1a6b3a,stroke:#2a8b5a,color:#fff
 ```
 
-<div class="note mt-6">
-选中演示区图片会自动加载并识别，无需手动操作
-</div>
-
 <style>
-.note {
-  text-align: center;
-  color: #92a1bc;
-  font-size: 0.9rem;
+.mermaid svg {
+  transform: scale(1.3);
+  transform-origin: top center;
 }
 </style>
 
@@ -225,34 +221,101 @@ GPU **仅用于训练加速**，GUI 推理走的是项目自己的纯 C++ 卷积
 </style>
 
 ---
-layout: two-cols
-transition: slide-left
----
-
-::left::
-
-## 我们负责
-
-- 手写神经网络原型
-- 架构决策与网络设计
-- 代码审查与质量把关
-- 实验设计与调参
-
-::right::
-
-## AI 辅助
-
-- 扩展 CNN 各层模块
-- 生成工程化代码
-- 构建与调试自动化
-- 文档与打包脚本
-
----
 layout: center
 transition: slide-left
 ---
 
-> **我们是架构师和决策者，AI 是工程化执行者。**
+# 我们负责 · AI 辅助
+
+<div class="grid grid-cols-2 gap-8 mt-6">
+
+<div class="role-card">
+  <div class="role-icon">👤</div>
+  <div class="role-title">我们负责</div>
+  <ul class="role-list">
+    <li>手写神经网络原型</li>
+    <li>架构决策与网络设计</li>
+    <li>代码审查与质量把关</li>
+    <li>实验设计与调参</li>
+  </ul>
+</div>
+
+<div class="role-card">
+  <div class="role-icon">🤖</div>
+  <div class="role-title">AI 辅助</div>
+  <ul class="role-list">
+    <li>扩展 CNN 各层模块</li>
+    <li>生成工程化代码</li>
+    <li>构建与调试自动化</li>
+    <li>文档与打包脚本</li>
+  </ul>
+</div>
+
+</div>
+
+<div class="quote-banner">
+  <span class="quote-mark">"</span> 我们是<span class="quote-em">架构师和决策者</span>，AI 是<span class="quote-em">工程化执行者</span>。<span class="quote-mark">"</span>
+</div>
+
+<style>
+.role-card {
+  background: linear-gradient(135deg, #1a2332 0%, #0f1628 100%);
+  border: 1px solid #2a3a55;
+  border-radius: 16px;
+  padding: 28px 24px;
+  height: 100%;
+}
+.role-icon {
+  font-size: 2.2rem;
+  margin-bottom: 6px;
+}
+.role-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #f3f6fd;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #2a3a55;
+}
+.role-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.role-list li {
+  color: #c8d1e3;
+  font-size: 1rem;
+  padding: 8px 0;
+  border-bottom: 1px solid #1a2332;
+}
+.role-list li:last-child {
+  border-bottom: none;
+}
+.role-list li::before {
+  content: "▸ ";
+  color: #6b5fcc;
+}
+.quote-banner {
+  margin-top: 28px;
+  background: linear-gradient(135deg, #1a1a3a 0%, #0f0f2a 100%);
+  border: 1px solid #4a3f8a;
+  border-radius: 14px;
+  padding: 16px 24px;
+  text-align: center;
+  color: #bdb7f8;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+.quote-mark {
+  color: #6b5fcc;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+.quote-em {
+  color: #e8e4ff;
+  font-weight: 700;
+}
+</style>
 
 ---
 layout: center
