@@ -1,2 +1,5 @@
 node_modules/
 dist/
+
+cppcnn-presentation.zip
+run_server.bat
