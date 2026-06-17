@@ -76,31 +76,76 @@ transition: slide-left
 
 现场展示：从启动到识别
 
-```mermaid
-%%{init: {'flowchart': {'useMaxWidth': false}}}%%
-flowchart TD
-  subgraph row1[" "]
-    direction LR
-    A[启动] --> B[GUI 启动] --> C[拖入图片]
-  end
-  subgraph row2[" "]
-    direction LR
-    D[点击识别] --> E[Top-1 类别] --> F[Top-3 概率条]
-  end
-  C --> D
-  style A fill:#4a3f8a,stroke:#6b5fcc,color:#fff
-  style B fill:#2a3a55,stroke:#4a5a7f,color:#fff
-  style C fill:#2a3a55,stroke:#4a5a7f,color:#fff
-  style D fill:#6b5fcc,stroke:#8b7fec,color:#fff
-  style E fill:#1a6b3a,stroke:#2a8b5a,color:#fff
-  style F fill:#1a6b3a,stroke:#2a8b5a,color:#fff
-```
+<div class="flowchart">
+  <div class="flow-row">
+    <div class="fnode fnode-start">启动</div>
+    <div class="farr">→</div>
+    <div class="fnode fnode-mid">GUI 启动</div>
+    <div class="farr">→</div>
+    <div class="fnode fnode-mid">拖入图片</div>
+  </div>
+  <div class="flow-connect">↓</div>
+  <div class="flow-row">
+    <div class="fnode fnode-action">点击识别</div>
+    <div class="farr">→</div>
+    <div class="fnode fnode-result">Top-1 类别</div>
+    <div class="farr">→</div>
+    <div class="fnode fnode-result">Top-3 概率条</div>
+  </div>
+</div>
 
 > 💡 演示时双击 `run_demo.bat` 即可启动，程序会自动加载测试图片
 
 <style>
-.mermaid .cluster rect { fill: transparent; stroke: transparent; }
-.mermaid .cluster-label { display: none; }
+.flowchart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.flow-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.fnode {
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.fnode-start {
+  background: #4a3f8a;
+  border: 2px solid #6b5fcc;
+  color: #fff;
+}
+.fnode-mid {
+  background: #2a3a55;
+  border: 2px solid #4a5a7f;
+  color: #fff;
+}
+.fnode-action {
+  background: #6b5fcc;
+  border: 2px solid #8b7fec;
+  color: #fff;
+}
+.fnode-result {
+  background: #1a6b3a;
+  border: 2px solid #2a8b5a;
+  color: #fff;
+}
+.farr {
+  color: #6b5fcc;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+.flow-connect {
+  color: #6b5fcc;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
 </style>
 
 ---
