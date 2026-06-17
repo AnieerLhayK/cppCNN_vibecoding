@@ -1,5 +1,8 @@
 # Root build directory (alternative -B build invocation)
 build/
 
+# In-source CMake artifacts (--build-in-source debris)
+CMakeFiles/
+
 # VSCode workspace files (personal per-user configuration)
 *.code-workspace

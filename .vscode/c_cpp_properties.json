@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        {
+            "name": "Win64",
+            "includePath": [
+                // Project source root (resolves #include "cnn/...", "data/...", etc.)
+                "${workspaceFolder}/codex/src",
+                // LibTorch 2.12 (CUDA 13.0) — required by cnn_libtorch/* files
+                "D:/SDK/libtorch-2.12.0-cu130/include/torch/csrc/api/include",
+                "D:/SDK/libtorch-2.12.0-cu130/include",
+                // Qt 6.11 — required by gui/* files
+                "C:/Qt/6.11.1/msvc2022_64/include"
+            ],
+            "defines": [
+                "CPPCNN_WITH_LIBTORCH=1",
+                "_CRT_SECURE_NO_WARNINGS"
+            ],
+            "compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64",
+            "configurationProvider": "ms-vscode.cmake-tools"
+        }
+    ],
+    "version": 4
+}
