@@ -103,7 +103,6 @@ ctest --test-dir codex/build -C Release --output-on-failure
 ```powershell
 Remove-Item -Recurse -Force codex/build
 ```
-```
 
 没有 Qt 时，CMake 会跳过 `cppcnn_gui`，CLI 和核心测试仍可构建。也可以显式设置 `-DCPPCNN_BUILD_GUI=OFF`。
 
