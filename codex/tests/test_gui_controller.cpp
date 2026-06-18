@@ -7,6 +7,8 @@
 #include <QDir>
 #include <QEventLoop>
 #include <QImage>
+#include <QRegularExpression>
+#include <QSet>
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QUrl>
@@ -78,14 +80,26 @@ void testModelAndPrediction(AppController& controller, const QString& sourceDire
     expect(controller.modelLoaded(), "The GUI did not auto-discover the development model.");
     expect(controller.classCount() == 10, "The GUI model class count is incorrect.");
     expect(controller.applicationVersion() == QStringLiteral("2.0.0"), "The GUI version is incorrect.");
-    expect(controller.demoImages().size() == 8, "The GUI demo class showcase is incomplete.");
+    expect(controller.demoImages().size() == 50, "The GUI demo class showcase is incomplete.");
+    QSet<QString> demonstratedClasses;
+    const QRegularExpression classPattern(QStringLiteral("_class_(\\d{5})_"));
+    for (const QVariant& demo : controller.demoImages()) {
+        const QString path = demo.toMap().value(QStringLiteral("url")).toUrl().toLocalFile();
+        const QRegularExpressionMatch match = classPattern.match(QFileInfo(path).fileName());
+        if (match.hasMatch()) {
+            demonstratedClasses.insert(match.captured(1));
+        }
+    }
+    expect(
+        demonstratedClasses.size() == 43,
+        "The GUI demo images should cover all 43 GTSRB classes.");
     expect(
         controller.demoImages().front().toMap().value(QStringLiteral("name")).toString()
-            == QStringLiteral("speed limit 30"),
+            == QStringLiteral("class 00000 00000 00000"),
         "The GUI demo label should omit its numeric sort prefix.");
 
     const QString demoPath = QDir(sourceDirectory).filePath(
-        QStringLiteral("Release/demo_images/01_speed_limit_30.ppm"));
+        QStringLiteral("Release/demo_images/01_class_00000_00000_00000.ppm"));
     expect(QFileInfo::exists(demoPath), "The GUI demo image is missing.");
     controller.loadImage(QUrl::fromLocalFile(demoPath));
     expect(controller.imageLoaded(), "The GUI could not load the PPM demo image.");
