@@ -280,8 +280,7 @@ if (Test-Path -LiteralPath $checksumPath -PathType Leaf) {
     Remove-Item -LiteralPath $checksumPath -Force
 }
 
-Copy-Item -LiteralPath $packageRoot -Destination $artifactPackageRoot -Recurse
-Compress-Archive -LiteralPath $artifactPackageRoot -DestinationPath $archivePath -CompressionLevel Optimal
+Compress-Archive -LiteralPath $packageRoot -DestinationPath $archivePath -CompressionLevel Optimal
 $archiveHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
 Set-Content `
     -LiteralPath $checksumPath `
