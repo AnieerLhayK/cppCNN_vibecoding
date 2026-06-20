@@ -1,5 +1,9 @@
 # 基于 C++ 的 CNN 交通标志识别系统
 
+> **GitHub 仓库：** [github.com/AnieerLhayK/cppCNN_vibecoding](https://github.com/AnieerLhayK/cppCNN_vibecoding)
+>
+> 本项目全部源代码、CMake 构建配置、Git 版本历史、Release 下载以及 AI 辅助开发记录均托管于此。提交本包时请以此仓库为准。
+
 ## 一、项目工程性总结
 
 本项目面向 GTSRB 德国交通标志数据集，完成了从数据读取、图像预处理、CNN 训练与评估、模型持久化，到 Qt 图形界面推理和 Windows 便携部署的完整闭环。
@@ -39,6 +43,8 @@
 | 用户界面 | Qt Quick 桌面 GUI，Top-1、置信度、Top-3、推理耗时 |
 
 ## 三、提交包结构
+
+> **GitHub 仓库：** [github.com/AnieerLhayK/cppCNN_vibecoding](https://github.com/AnieerLhayK/cppCNN_vibecoding) ← 请以此为准
 
 ```text
 cppCNN-Codex-Teacher-Submission-v2.0.0/
