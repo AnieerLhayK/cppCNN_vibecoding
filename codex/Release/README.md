@@ -65,4 +65,4 @@ Release/
   -Version 2.0.0
 ```
 
-如果模型或 Qt 组件缺失，脚本会明确报错并停止，不会生成残缺包。正式下载请使用仓库的 [GitHub Releases](https://github.com/f32797653-beep/cppCNN_vibecoding/releases/latest)。
+如果模型或 Qt 组件缺失，脚本会明确报错并停止，不会生成残缺包。正式下载请使用仓库的 [GitHub Releases](https://github.com/AnieerLhayK/cppCNN_vibecoding/releases/latest)。

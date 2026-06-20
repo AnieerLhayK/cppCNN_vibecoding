@@ -76,7 +76,7 @@ gh release create v2.1.0 `
   D:\AI\data\codex\cache\staging\cppcnn-user-release\cppCNN-Codex-User-Software-v2.1.0.zip.sha256 `
   D:\AI\data\codex\cache\staging\cppcnn-teacher-submission\cppCNN-Codex-Teacher-Submission-v2.1.0.zip `
   D:\AI\data\codex\cache\staging\cppcnn-teacher-submission\cppCNN-Codex-Teacher-Submission-v2.1.0.zip.sha256 `
-  --repo f32797653-beep/cppCNN_vibecoding `
+  --repo AnieerLhayK/cppCNN_vibecoding `
   --target main `
   --title "cppCNN Traffic Sign Studio v2.1.0" `
   --notes-file .\codex\docs\release_notes_v2.1.0.md `

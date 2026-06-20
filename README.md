@@ -9,7 +9,7 @@
 
 ## 当前发布
 
-- [下载最新 GitHub Release](https://github.com/f32797653-beep/cppCNN_vibecoding/releases/latest)
+- [下载最新 GitHub Release](https://github.com/AnieerLhayK/cppCNN_vibecoding/releases/latest)
 - [Codex 主实现说明](codex/README.md)
 - [Claude 对照原型说明](claude/README.md)
 - [Codex 项目报告](codex/docs/project_report.md)
